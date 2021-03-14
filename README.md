@@ -2,7 +2,7 @@
 ---
 ## Table of contents:
 
-1. [Tool description](#description)
+1. [Module description](#description)
 2. [Installation and pre-requisites](#install)
 3. [Roles and license requirements](#roleslic)
 4. [Functions included in the module](#functions)
@@ -11,7 +11,7 @@
  
 
 
-## Tool description  <a name="description"></a>
+## Module description  <a name="description"></a>
 
 The DFIR-O365RC PowerShell module is a set of functions that allow the DFIR analyst to collect logs relevant for Office 365 Business Email Compromise investigations.
 
