@@ -98,8 +98,8 @@ The module has 6 functions:
 
 | Function name  | Data Source/History  | Performance  |  Completeness | Details |
 |---|---|---|---|---|
-|  Get-0365Full |  Unified audit logs/90 days |  Poor |  All unified audit logs | A subset of logs per *record type* can be retrieved. Use only on a small tenant or a short period of time |
-|  Get-0365Light |  Unified audit logs/90 days |  Good |  A subset of unified audit logs only | Only a subset of *operations* considered of interest is retrieved.   |
+|  Get-O365Full |  Unified audit logs/90 days |  Poor |  All unified audit logs | A subset of logs per *record type* can be retrieved. Use only on a small tenant or a short period of time |
+|  Get-O365Light |  Unified audit logs/90 days |  Good |  A subset of unified audit logs only | Only a subset of *operations* considered of interest is retrieved.   |
 |  Get-DefenderforO365 |  Unified audit logs/90 days |  Good |  A subset of unified audit logs only | Retrieves Defender for Office 365 related logs. Requires at least an [E5 license](https://www.microsoft.com/en-us/microsoft-365/enterprise/office-365-e5?activetab=pivot:overviewtab) or a license plan such as [Microsoft Defender for Office 365 Plan](https://docs.microsoft.com/en-us/microsoft-365/security/office-365-security/office-365-atp?view=o365-worldwide#microsoft-defender-for-office-365-plan-1-and-plan-2) or [cloud app security](https://www.microsoft.com/en-us/microsoft-365/enterprise-mobility-security/cloud-app-security)  |
 | Get-AADLogs  | Azure AD Logs/30 days  |  Good | All Azure AD logs  | Get tenant general information, all Azure sign-ins and audit logs. Azure AD sign-ins logs have more information than Azure AD logs retrieved via Unified audit logs. | 
 | Get-AADApps  | Azure AD Logs/30 days  |  Good | A subset of Azure AD logs only  | Get Azure audit logs related to Azure applications and service principals only. The logs are enriched with application or service principal object information. | 
