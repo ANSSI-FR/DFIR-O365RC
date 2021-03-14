@@ -202,3 +202,32 @@ All files generated are in JSON format.
 - Get-O365Light creates folders named after the current date using the *YYYY-MM-DD* format in the *O365_unified_audit_logs*, in each directory a file called *UnifiedAuditLog_%FQDN%_YYYY-MM-DD.json* is created.
 - Get-DefenderforO365 creates folders named after the current date using the *YYYY-MM-DD* format in the *O365_unified_audit_logs*, in each directory a file called *UnifiedAuditLog_%FQDN%_YYYY-MM-DD_DefenderforO365.json* is created.
 - Search-O365 creates folders named after the current date using the *YYYY-MM-DD* format in the *O365_unified_audit_logs*, in each directory a file called *UnifiedAuditLog_%FQDN%_YYYY-MM-DD_%searchtype%.json* is created, where *searchtype* can have the values "*Freetext*", "*IPAddresses*" or "*UserIds*".
+
+Launching the various functions will generate a similar folder structure:
+
+```
+DFIR-O365_Logs
+│   Get-AADApps.log
+│   Get-AADLogs.log
+│   Get-DefenderforO365.log
+│   Get-O365Light.log    
+│   Search-O365.log
+└───azure_ad_apps
+│    │   AADApps_%FQDN%.json
+└───azure_ad_signin
+│   │
+│   └───YYYY-MM-DD
+│       │   AADSigninLog_%FQDN%_YYYY-MM-DD_HH-00-00.json
+│       │   ...
+└───azure_ad_tenant
+│    │   AADTenant_%FQDN%.json
+└───O365_unified_audit_logs
+│   │
+│   └───YYYY-MM-DD
+│       │   UnifiedAuditLog_%FDQN%_YYYY-MM-DD.json
+│       │   UnifiedAuditLog_%FQDN%_YYYY-MM-DD_freetext.json
+│       │   UnifiedAuditLog_%FQDN%_YYYY-MM-DD_DefenderforO365.json
+│       │   UnifiedAuditLog_%FQDN%_YYYY-MM-DD_HH-00-00.json
+│       │   ...
+
+```
