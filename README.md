@@ -46,8 +46,8 @@ Clone the DFIR-O365RC repository. The tool works on *PowerShell Desktop* and *Po
 DFIR-O365 uses Jason Thompson's [MSAL.PS](https://github.com/AzureAD/MSAL.PS) and Boe Prox's [PoshRSJob](https://github.com/proxb/PoshRSJob) modules. To install them run the following commands:
 
 ```
-Install-Module -Name MSAL.PS
-Install-Module -Name PoshRSJob
+Install-Module -Name MSAL.PS -RequiredVersion '4.21.0.1'
+Install-Module -Name PoshRSJob -RequiredVersion '1.7.4.4'
 ```
 
 If [MSAL.PS](https://github.com/AzureAD/MSAL.PS) module installation fails with the following message:
