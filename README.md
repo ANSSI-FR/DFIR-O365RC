@@ -196,7 +196,7 @@ When using *PowerShell Core* the authentication process will require a *device c
 
 All files generated are in JSON format.
 
-- Get-AADApps génère creates a file named *AADApps_%FQDN%.json* in the *azure_ad_apps* folder where *FQDN* is the domain name part of the account used to collect the logs. 
+- Get-AADApps creates a file named *AADApps_%FQDN%.json* in the *azure_ad_apps* folder where *FQDN* is the domain name part of the account used to collect the logs. 
 - Get-AADLogs creates folders named after the current date using the *YYYY-MM-DD* format in the *azure_ad_signin* folder, in each directory a file called *AADSigninLog_%FQDN%_YYYY-MM-DD_HH-00-00.json* is created for Azure AD sign-ins logs. A folder *azure_ad_audit* is also created and results are dumped in files named *AADAuditLog_%FQDN%_YYYY-MM-DD.json* for Azure AD audit logs. Finally a folder called *azure_ad_tenant* is created and the general tenant information written in a file named *AADTenant_%FQDN%.json*.
 - Get-O365Full creates folders named after the current date using the *YYYY-MM-DD* format in the *O365_unified_audit_logs*, in each directory a file called *UnifiedAuditLog_%FQDN%_YYYY-MM-DD_HH-00-00.json* is created.
 - Get-O365Light creates folders named after the current date using the *YYYY-MM-DD* format in the *O365_unified_audit_logs*, in each directory a file called *UnifiedAuditLog_%FQDN%_YYYY-MM-DD.json* is created.
