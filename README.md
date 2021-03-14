@@ -203,7 +203,7 @@ All files generated are in JSON format.
 - Get-DefenderforO365 creates folders named after the current date using the *YYYY-MM-DD* format in the *O365_unified_audit_logs*, in each directory a file called *UnifiedAuditLog_%FQDN%_YYYY-MM-DD_DefenderforO365.json* is created.
 - Search-O365 creates folders named after the current date using the *YYYY-MM-DD* format in the *O365_unified_audit_logs*, in each directory a file called *UnifiedAuditLog_%FQDN%_YYYY-MM-DD_%searchtype%.json* is created, where *searchtype* can have the values "*Freetext*", "*IPAddresses*" or "*UserIds*".
 
-Launching the various functions will generate a similar folder structure:
+Launching the various functions will generate a similar directory structure:
 
 ```
 DFIR-O365_Logs
