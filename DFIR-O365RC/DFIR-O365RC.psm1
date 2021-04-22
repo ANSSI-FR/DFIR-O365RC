@@ -51,7 +51,7 @@ Function Get-OAuthToken {
     param (
         
         [Parameter(Mandatory = $true)]
-        [ValidateSet("EXO","MSGraph")]
+        [ValidateSet("EXO","MSGraph","AzRM")]
         [string]$Service,
         [Parameter(Mandatory = $false, ParameterSetName="silent")]
         [boolean]$silent=$false,
@@ -77,6 +77,13 @@ Function Get-OAuthToken {
             $redirectUri = "urn:ietf:wg:oauth:2.0:oob"
     
         }
+        AzRM
+            {
+            # AZ PowerShell Client ID
+            $clientid = "1950a258-227b-4e31-a9cf-717495945fc2"
+            $scope = "https://management.azure.com/.default"
+            $redirectUri = "urn:ietf:wg:oauth:2.0:oob"    
+            }
         Default { Write-Error "Service Not Implemented" -ErrorAction Stop }
     }
 
@@ -147,7 +154,7 @@ Function Get-OAuthToken {
     return $token
 }
 
-Function Get-MSGraphResponse {
+Function Get-RestAPIResponse {
     param 
     (
         [Parameter(Mandatory = $true)]
@@ -157,11 +164,17 @@ Function Get-MSGraphResponse {
         [Parameter(Mandatory = $true)]
         [string]$user,
         [Parameter(Mandatory = $true)]
+        [ValidateSet("MSGraph","AzRM")]
+        [string]$RESTAPIService,
+        [Parameter(Mandatory = $true)]
         [string]$Logfile
     )
-
-    $token = Get-MsalToken -Silent -PublicClientApplication $app -LoginHint $user -Scopes "https://graph.microsoft.com/.default"
-    $AADresults = @()
+    if($RESTAPIService -eq "MSGraph")
+        {$token = Get-MsalToken -Silent -PublicClientApplication $app -LoginHint $user -Scopes "https://graph.microsoft.com/.default"}
+    else
+        {$token = Get-MsalToken -Silent -PublicClientApplication $app -LoginHint $user -Scopes "https://management.azure.com/.default"}
+    
+    $APIresults = @()
 
     $Stoploop = $false
     [int]$Retrycount = "0"
@@ -173,13 +186,13 @@ Function Get-MSGraphResponse {
             }
         catch {
             if ($Retrycount -gt 3){
-                "Failed to dump from MSGraph uri $($uri) records 3 times - aborting" | Write-Log -LogPath $logfile -LogLevel "Error"
+                "Failed to dump from $($RESTAPIService) uri $($uri) records 3 times - aborting" | Write-Log -LogPath $logfile -LogLevel "Error"
                 $Data = @()  
                 $Stoploop = $true
                 }
             else {
                 $errormessage = $_.Exception.Message
-                "Failed to dump from MSGraph uri $($uri) - sleeping and retrying  - $($errormessage)" | Write-Log -LogPath $logfile -LogLevel "Warning"   
+                "Failed to dump from $($RESTAPIService) uri $($uri) - sleeping and retrying  - $($errormessage)" | Write-Log -LogPath $logfile -LogLevel "Warning"   
                 Start-Sleep -Seconds 1
                 $Retrycount = $Retrycount + 1
                 }
@@ -189,30 +202,40 @@ Function Get-MSGraphResponse {
 
         if($Data)
         {
-            $AADresults+=$Data.Value
-            while($null -ne $Data."@odata.nextLink" ) {        
+            $APIresults+=$Data.Value
+            while(($null -ne $Data."@odata.nextLink") -or  ($null -ne $Data.nextLink)) {        
             $Stoploop = $false
              [int]$Retrycount = "0"
               do {
                    try {
-                    $Data = Invoke-RestMethod -Uri $Data."@odata.nextLink" -Headers @{Authorization = "Bearer $($token.AccessToken)"} -Method Get -ContentType "application/json" -ErrorAction Stop
-                    $AADresults+=$Data.value
+                    if($RESTAPIService -eq "MSGraph")
+                        {
+                        $Data = Invoke-RestMethod -Uri $Data."@odata.nextLink" -Headers @{Authorization = "Bearer $($token.AccessToken)"} -Method Get -ContentType "application/json" -ErrorAction Stop
+                        }
+                    else {
+                        $Data = Invoke-RestMethod -Uri $Data.nextLink -Headers @{Authorization = "Bearer $($token.AccessToken)"} -Method Get -ContentType "application/json" -ErrorAction Stop
+                        }
+                    $APIresults+=$Data.value
                     $Stoploop = $true
                      }
                 catch {
                     if ($Retrycount -gt 3){
-                        "Failed to dump from MSGraph uri $($uri) records 3 times - aborting" | Write-Log -LogPath $logfile -LogLevel "Error"
+                        "Failed to dump from $($RESTAPIService) uri $($uri) records 3 times - aborting" | Write-Log -LogPath $logfile -LogLevel "Error"
                          $Data = @()  
                          $Stoploop = $true
                     }
                      else {
                         $errormessage = $_.Exception.Message
-                        "Failed to dump from MSGraph uri $($uri) - sleeping and retrying  - $($errormessage)" | Write-Log -LogPath $logfile -LogLevel "Warning"   
+                        "Failed to dump from $($RESTAPIService) uri $($uri) - sleeping and retrying  - $($errormessage)" | Write-Log -LogPath $logfile -LogLevel "Warning"   
                         Start-Sleep -Seconds 1
                         if($token.ExpiresOn -le (get-date))
                             {
-                            "Token has expired renewing MSGraph token" | Write-Log -LogPath $logfile -LogLevel "Warning"  
-                            $token = Get-MsalToken -Silent -PublicClientApplication $app -LoginHint $user -Scopes "https://graph.microsoft.com/.default" 
+                            "Token has expired renewing $($RESTAPIService) token" | Write-Log -LogPath $logfile -LogLevel "Warning"  
+                            if($RESTAPIService -eq "MSGraph")
+                            {$token = Get-MsalToken -Silent -PublicClientApplication $app -LoginHint $user -Scopes "https://graph.microsoft.com/.default"}
+                        else
+                            {$token = Get-MsalToken -Silent -PublicClientApplication $app -LoginHint $user -Scopes "https://management.azure.com/.default"}
+                        
                             }
                         $Retrycount = $Retrycount + 1
                         }
@@ -222,7 +245,7 @@ Function Get-MSGraphResponse {
         }    
         else
         {"No event to process for uri $($uri)"  | Write-Log -LogPath $logfile  }    
-    return $AADresults
+    return $APIresults
 }
 
 function Connect-EXOPsearchUnified

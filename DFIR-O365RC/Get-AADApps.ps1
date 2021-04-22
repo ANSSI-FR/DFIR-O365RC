@@ -44,12 +44,12 @@
     $Auditend = "{0:s}" -f $Enddate + "Z"
     $uri = "https://graph.microsoft.com/v1.0/auditLogs/directoryAudits?`$filter=(activityDisplayName eq 'Consent to application' or activityDisplayName eq 'Add app role assignment to service principal' or activityDisplayName eq 'Add delegated permission grant' or activityDisplayName eq 'Add service principal credentials' or activityDisplayName eq 'Add service principal' or activityDisplayName eq 'Add OAuth2PermissionGrant') and activityDateTime gt $($Auditstart) and activityDateTime lt $($Auditend)"
     $app = Get-MsalClientApplication | Where-Object{$_.ClientId -eq "1b730954-1685-4b74-9bfd-dac224a7b894"}
-    $SPEvents = Get-MSGraphResponse -uri $uri  -logfile $logfile -app $app -user $user
+    $SPEvents = Get-RestAPIResponse -RESTAPIService "MSGraph" -uri $uri  -logfile $logfile -app $app -user $user
     
     #Get all Service Principals
     "Getting all service principals"   | Write-Log -LogPath $logfile 
     $uriSP = "https://graph.microsoft.com/v1.0/servicePrincipals/"
-    $ALLServicePrincipals = Get-MSGraphResponse -uri $uriSP  -logfile $logfile -app $app -user $user
+    $ALLServicePrincipals = Get-RestAPIResponse -RESTAPIService "MSGraph" -uri $uriSP  -logfile $logfile -app $app -user $user
 
     $EnrichedSPEvents = @()
     $UniqServicePrincipals = $SPEvents | Select-Object -ExpandProperty targetResources | Group-Object -Property id
@@ -65,13 +65,13 @@
         {
         "Getting Oauth PermissionGrants for $($ServicePrincipal.Name) Service principal"   | Write-Log -LogPath $logfile 
         $uriOauth = "https://graph.microsoft.com/v1.0/servicePrincipals/$($ServicePrincipal.Name)/oauth2PermissionGrants/" 
-        $SPOAuth = Get-MSGraphResponse -uri $uriOauth   -logfile $logfile -app $app -user $user
+        $SPOAuth = Get-RestAPIResponse -RESTAPIService "MSGraph" -uri $uriOauth   -logfile $logfile -app $app -user $user
         $delegatedconsentautorisations = (($SPOAuth | Group-Object -Property scope).Name) -join ","
         $delegatedconsentTypes = (($SPOAuth | Group-Object -Property consentType).Name) -join ","
 
         "Getting appRoleAssignments for $($ServicePrincipal.Name) Service principal"   | Write-Log -LogPath $logfile 
         $uriOauth = "https://graph.microsoft.com/v1.0/servicePrincipals/$($ServicePrincipal.Name)/appRoleAssignments/" 
-        $SPOAuth = Get-MSGraphResponse -uri $uriOauth   -logfile $logfile -app $app -user $user
+        $SPOAuth = Get-RestAPIResponse -RESTAPIService "MSGraph" -uri $uriOauth   -logfile $logfile -app $app -user $user
         $appRoleIdAssignements = (($SPOAuth | Group-Object -Property appRoleId).Name) -join ","
        
         $EventsperSP  |  add-member -MemberType NoteProperty -Name appRoleIdAssignements -Value $appRoleIdAssignements  -force
@@ -132,16 +132,16 @@
     $Auditend = "{0:s}" -f $Enddate + "Z"
     $uri = "https://graph.microsoft.com/v1.0/auditLogs/directoryAudits?`$filter=(activityDisplayName eq 'Add application' or startswith(activityDisplayName,'Update application')) and activityDateTime gt $($Auditstart) and activityDateTime lt $($Auditend)"
     $app = Get-MsalClientApplication | Where-Object{$_.ClientId -eq "1b730954-1685-4b74-9bfd-dac224a7b894"}
-    $AppEvents = Get-MSGraphResponse -uri $uri  -logfile $logfile -app $app -user $user
+    $AppEvents = Get-RestAPIResponse -RESTAPIService "MSGraph" -uri $uri  -logfile $logfile -app $app -user $user
     
     #Get all Apps
     "Getting all Apps"   | Write-Log -LogPath $logfile 
     $uriAPP = "https://graph.microsoft.com/v1.0/applications/"
-    $ALLApps = Get-MSGraphResponse -uri $uriAPP  -logfile $logfile -app $app -user $user
+    $ALLApps = Get-RestAPIResponse -RESTAPIService "MSGraph" -uri $uriAPP  -logfile $logfile -app $app -user $user
     #Get all deleted Apps
     "Getting all deleted Apps"   | Write-Log -LogPath $logfile 
     $uriDelAPPs = "https://graph.microsoft.com/v1.0/directory/deleteditems/microsoft.graph.application"
-    $DelApps = Get-MSGraphResponse -uri $uriDelAPPs  -logfile $logfile -app $app -user $user
+    $DelApps = Get-RestAPIResponse -RESTAPIService "MSGraph" -uri $uriDelAPPs  -logfile $logfile -app $app -user $user
     #merge existing and deleted Apps
     $ALLApps += $DelApps
 

@@ -37,6 +37,8 @@ DFIR-O365RC will fetch data from:
 - Azure AD Logs using the *MS Graph API* because performance is good, history is 30 days and it works on *PowerShell Core*.
 - Unified Audit Logs using *Exchange online PowerShell* despite poor performance, history is 90 days and it works on *PowerShell Core*.
 
+In case you are also investigating other Azure resources (IaaS, PaaS...) DFIR-O365RC can also fetch data from Azure [Activity logs](https://docs.microsoft.com/en-us/azure/azure-monitor/essentials/activity-log) using the *[Azure Monitor RESTAPI](https://docs.microsoft.com/en-us/rest/api/monitor/)*. History is 90 days and it works on *PowerShell Core*.
+
 As a result, DFIR-O365RC works also on Linux or Mac, as long as you have *PowerShell Core* and a browser in order to use device login.
 
 ## Installation and pre-requisites <a name="install"></a>
@@ -92,6 +94,8 @@ The user launching the tool should have the following roles:
 
 In order to retrieve Azure AD [sign-ins logs](https://docs.microsoft.com/en-us/azure/active-directory/reports-monitoring/concept-sign-ins) with the *MS Graph API* you need at least one user with an [Azure AD Premium P1](https://azure.microsoft.com/en-us/pricing/details/active-directory/) license. This license can be purchased at additional cost for a single user and is sometimes included in some license plans such as the *Microsoft 365 Business Premium* for small and medium-sized businesses.
 
+If you need to retrieve also the Azure Activity logs you need the **Log Analytics Reader** role for the Azure subscription you are dumping the logs from.
+
  ## Functions included in the module <a name="functions"></a>
 
 The module has 6 functions:
@@ -103,7 +107,9 @@ The module has 6 functions:
 |  Get-DefenderforO365 |  Unified audit logs/90 days |  Good |  A subset of unified audit logs only | Retrieves Defender for Office 365 related logs. Requires at least an [E5 license](https://www.microsoft.com/en-us/microsoft-365/enterprise/office-365-e5?activetab=pivot:overviewtab) or a license plan such as [Microsoft Defender for Office 365 Plan](https://docs.microsoft.com/en-us/microsoft-365/security/office-365-security/office-365-atp?view=o365-worldwide#microsoft-defender-for-office-365-plan-1-and-plan-2) or [cloud app security](https://www.microsoft.com/en-us/microsoft-365/enterprise-mobility-security/cloud-app-security)  |
 | Get-AADLogs  | Azure AD Logs/30 days  |  Good | All Azure AD logs  | Get tenant general information, all Azure sign-ins and audit logs. Azure AD sign-ins logs have more information than Azure AD logs retrieved via Unified audit logs. | 
 | Get-AADApps  | Azure AD Logs/30 days  |  Good | A subset of Azure AD logs only  | Get Azure audit logs related to Azure applications and service principals only. The logs are enriched with application or service principal object information. | 
+| Get-AADDevices  | Azure AD Logs/30 days  |  Good | A subset of Azure AD logs only  | Get Azure audit logs related to Azure AD joined or registered devices only. The logs are enriched with device object information. | 
 | Search-O365  | Unified audit logs/90 days  |  Depends on the query | A subset of unified audit logs only  | Search for activity related to a particular user, IP address or use the *freetext* query. | 
+| Get-AzRMActivityLogs  | Azure Activity logs/90 days  |  Good | All Azure Activity logs  | Get all Azure activity logs for a given subscription or on every subscription the account running the function has access to | 
 
  When querying *Unified audit logs* you are limited to 3 concurrent *Exchange Online Powershell* sessions. DFIR-O365RC will try to use all available sessions, please close any existing session before launching the log collection.
 
@@ -131,6 +137,14 @@ In order to retrieve enriched Azure AD audit logs related to Azure applications 
 $enddate = get-date
 $startdate = $enddate.adddays(-30)
 Get-AADApps -startdate $startdate -enddate $enddate
+```
+
+In order to retrieve enriched Azure AD audit logs related to Azure AD joined or registered devices from the past 30 days launch the following command:
+
+```
+$enddate = get-date
+$startdate = $enddate.adddays(-30)
+Get-AADDevices -startdate $startdate -enddate $enddate
 ```
 
 In order to retrieve all unified audit logs considered of interest from the past 30 days, except those related to Azure AD, which were already retrieved by the first command, launch:
@@ -185,6 +199,12 @@ Search-O365 -StartDate $startdate -Enddate $enddate -IPAddresses "X.X.X.X,Y.Y.Y.
 #Retrieve events related to users user1@contoso.com and user2@constoso.com , argument is a system.array object
 Search-O365 -StartDate $startdate -Enddate $enddate -UserIds "user1@contoso.com", "user2@contoso.com"
 ```
+To retrieve all Azure Activity logs the account has access to launch the following command, available subscriptions will be displayed:
+```
+$enddate = get-date
+$startdate = $enddate.adddays(-90)
+Get-AzRMActivityLogs -StartDate $startdate -Enddate $enddate
+```
 When using *PowerShell Core* the authentication process will require a *device code*, you will need to use the *devicecode* parameter and launch your browser, open the *https://microsoft.com/devicelogin* URL and enter the code provided by the following message:
   
   ```
@@ -197,7 +217,9 @@ When using *PowerShell Core* the authentication process will require a *device c
 All files generated are in JSON format.
 
 - Get-AADApps creates a file named *AADApps_%FQDN%.json* in the *azure_ad_apps* folder where *FQDN* is the domain name part of the account used to collect the logs. 
+- Get-AADDevices creates a file named *AADDevices_%FQDN%.json* in the *azure_ad_devices* folder. 
 - Get-AADLogs creates folders named after the current date using the *YYYY-MM-DD* format in the *azure_ad_signin* folder, in each directory a file called *AADSigninLog_%FQDN%_YYYY-MM-DD_HH-00-00.json* is created for Azure AD sign-ins logs. A folder *azure_ad_audit* is also created and results are dumped in files named *AADAuditLog_%FQDN%_YYYY-MM-DD.json* for Azure AD audit logs. Finally a folder called *azure_ad_tenant* is created and the general tenant information written in a file named *AADTenant_%FQDN%.json*.
+- Get-AzRMActivityLogs creates folders named after the current date using the *YYYY-MM-DD* format in the *azure_rm_activity* folder, in each directory a file called *AzRM_%FQDN%_%SubscriptionID%_YYYY-MM-DD_HH-00-00.json* is created where %SubscriptionID% is the Azure subscription ID. A folder called *azure_rm_subscriptions* is created and each subscription information written in a file named *AzRMsubscriptions_%FQDN%.json*.
 - Get-O365Full creates folders named after the current date using the *YYYY-MM-DD* format in the *O365_unified_audit_logs*, in each directory a file called *UnifiedAuditLog_%FQDN%_YYYY-MM-DD_HH-00-00.json* is created.
 - Get-O365Light creates folders named after the current date using the *YYYY-MM-DD* format in the *O365_unified_audit_logs*, in each directory a file called *UnifiedAuditLog_%FQDN%_YYYY-MM-DD.json* is created.
 - Get-DefenderforO365 creates folders named after the current date using the *YYYY-MM-DD* format in the *O365_unified_audit_logs*, in each directory a file called *UnifiedAuditLog_%FQDN%_YYYY-MM-DD_DefenderforO365.json* is created.
@@ -208,12 +230,19 @@ Launching the various functions will generate a similar directory structure:
 ```
 DFIR-O365_Logs
 │   Get-AADApps.log
+│   Get-AADDevices.log
 │   Get-AADLogs.log
+|   Get-AzRMActivityLogs
 │   Get-DefenderforO365.log
 │   Get-O365Light.log    
 │   Search-O365.log
 └───azure_ad_apps
 │    │   AADApps_%FQDN%.json
+└───azure_ad_audit
+│    │   AADAuditLog_%FQDN%_YYYY-MM-DD.json
+│    │   ...
+└───azure_ad_devices
+│    │   AADDevices_%FQDN%.json 
 └───azure_ad_signin
 │   │
 │   └───YYYY-MM-DD
@@ -221,6 +250,13 @@ DFIR-O365_Logs
 │       │   ...
 └───azure_ad_tenant
 │    │   AADTenant_%FQDN%.json
+└───azure_rm_activity
+│   │
+│   └───YYYY-MM-DD
+│       │   AzRM_%FQDN%_%SubscriptionID%_YYYY-MM-DD_HH-00-00.json
+│       │   ...
+└───azure_rm_subscriptions
+│    │   AzRMsubscriptions_%FQDN%.json
 └───O365_unified_audit_logs
 │   │
 │   └───YYYY-MM-DD

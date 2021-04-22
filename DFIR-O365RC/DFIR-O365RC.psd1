@@ -8,7 +8,7 @@
 RootModule = '.\DFIR-O365RC.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.0.0'
+ModuleVersion = '1.1.0'
 
 # Supported PSEditions
 CompatiblePSEditions = 'Core', 'Desktop'
@@ -47,11 +47,13 @@ NestedModules = @(
     'Get-AADApps.ps1',
     'Get-DefenderforO365.ps1',
     'Search-O365.ps1',
+    'Get-AADDevices.ps1',
+    'Get-AzRMActivityLogs.ps1',
     'Get-AADLogs.ps1'
 )
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-FunctionsToExport =  'Get-OAuthToken', 'Get-MSGraphResponse', 'Connect-EXOPsearchUnified', 'Get-LargeUnifiedAuditLog', 'Get-AADApps', 'Get-AADLogs', 'Get-O365Full', 'Get-O365Light', 'Get-DefenderforO365', 'Search-O365', 'Write-Log'
+FunctionsToExport =  'Get-OAuthToken', 'Get-RestAPIResponse', 'Connect-EXOPsearchUnified', 'Get-LargeUnifiedAuditLog', 'Get-AADApps', 'Get-AADLogs', 'Get-O365Full', 'Get-O365Light', 'Get-DefenderforO365', 'Search-O365', 'Get-AADDevices', 'Get-AzRMActivityLogs', 'Write-Log'
 
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
@@ -73,6 +75,7 @@ PrivateData = @{
         # ReleaseNotes of this module
         ReleaseNotes ='
         1.0.0 - Initial release
+        1.1.0 - Added Get-AADDevices and Get-AzRMActivityLogs functions
          '
 
 

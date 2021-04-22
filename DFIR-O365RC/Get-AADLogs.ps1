@@ -86,7 +86,7 @@ else {
     "Normal size tenant, dumping all logs"  | Write-Log -LogPath $logfile   
 }
 "Dumping tenant information in azure_ad_tenant folder"  | Write-Log -LogPath $logfile   
-$tenantinfo | ConvertTo-Json -Depth 99 |  out-file $outputfile -encoding UTF8 
+$tenantinfo.value | ConvertTo-Json -Depth 99 |  out-file $outputfile -encoding UTF8 
 
 
     $Launchsearch =
@@ -107,7 +107,7 @@ $tenantinfo | ConvertTo-Json -Depth 99 |  out-file $outputfile -encoding UTF8
         $Auditstart = "{0:s}" -f $newstartdate + "Z"
         $Auditend = "{0:s}" -f $newenddate + "Z"
         $uri = "https://graph.microsoft.com/v1.0/auditLogs/directoryAudits?`$filter=activityDateTime gt $($Auditstart) and activityDateTime lt $($Auditend)"
-        $AADAuditEvents = Get-MSGraphResponse -uri $uri  -logfile $logfile -app $app -user $user
+        $AADAuditEvents = Get-RestAPIResponse -RESTAPIService "MSGraph" -uri $uri  -logfile $logfile -app $app -user $user
         if($AADAuditEvents)
             {
             $AADAuditEvents | ConvertTo-Json -Depth 99 |  out-file $outputfile -encoding UTF8 
@@ -172,7 +172,7 @@ $tenantinfo | ConvertTo-Json -Depth 99 |  out-file $outputfile -encoding UTF8
             
                 $uri = "https://graph.microsoft.com/v1.0/auditLogs/signIns?`$filter=createdDateTime gt $($Signinstart) and createdDateTime lt $($Signinend) and status/errorCode eq 0 and (appId eq '00000002-0000-0ff1-ce00-000000000000' or appId eq '1b730954-1685-4b74-9bfd-dac224a7b894' or appId eq 'a0c73c16-a7e3-4564-9a95-2bdf47383716' or appId eq '00000003-0000-0ff1-ce00-000000000000'  or appId eq '6eb59a73-39b2-4c23-a70f-e2e3ce8965b1' or appId eq 'cb1056e2-e479-49de-ae31-7812af012ed8' or appId eq '1950a258-227b-4e31-a9cf-717495945fc2' or appId eq 'fb78d390-0c51-40cd-8e17-fdbfab77341b' or appId eq '04b07795-8ddb-461a-bbee-02f9e1bf7b46')"  
                 }
-                $AADSigninEvents = Get-MSGraphResponse -uri $uri  -logfile $logfile -app $app -user $user
+                $AADSigninEvents = Get-RestAPIResponse -RESTAPIService "MSGraph" -uri $uri  -logfile $logfile -app $app -user $user
                 $foldertoprocess = $aadsigninfolder + "\" + $datetoprocess
                 if ((Test-Path $foldertoprocess) -eq $false){New-Item $foldertoprocess -Type Directory}
                 $outputfile = $foldertoprocess + "\AADSigninLog_" + $tenant + "_" + $outputdate + ".json"
@@ -216,7 +216,7 @@ $tenantinfo | ConvertTo-Json -Depth 99 |  out-file $outputfile -encoding UTF8
     "Lauching job number $($d) with startdate {0:yyyy-MM-dd} {0:HH:mm:ss} and enddate {1:yyyy-MM-dd} {1:HH:mm:ss}" -f ($newstartdate,$newenddate) | Write-Log -LogPath $logfile
     $datetoprocess = ($newstartdate.ToString("yyyy-MM-dd"))
     $jobname = "AAD" + $datetoprocess
-    Start-RSJob -Name $jobname  -ScriptBlock $Launchsearch -FunctionsToImport  write-log, Get-MSGraphResponse -ArgumentList $app, $user, $newstartdate, $newenddate, $currentpath, $tenantsize, $Dumplogs
+    Start-RSJob -Name $jobname  -ScriptBlock $Launchsearch -FunctionsToImport  write-log, Get-RestAPIResponse -ArgumentList $app, $user, $newstartdate, $newenddate, $currentpath, $tenantsize, $Dumplogs
 
     $nbjobrunning = (Get-RSJob | where-object {$_.State -eq "running"}  | Measure-Object).count
     while($nbjobrunning -ge 3)
