@@ -68,13 +68,13 @@ Function Get-OAuthToken {
             # EXO Powershell Client ID
             $clientId = "a0c73c16-a7e3-4564-9a95-2bdf47383716" 
             $scope = "https://outlook.office365.com/.default"
-            $redirectUri = "urn:ietf:wg:oauth:2.0:oob"
+            $redirectUri = "https://login.microsoftonline.com/common/oauth2/nativeclient"
         }
         MSGraph {
             # Azure AD PowerShell Client ID
             $clientId = "1b730954-1685-4b74-9bfd-dac224a7b894"
             $scope = "https://graph.microsoft.com/.default"
-            $redirectUri = "urn:ietf:wg:oauth:2.0:oob"
+            $redirectUri = "https://login.microsoftonline.com/common/oauth2/nativeclient"
     
         }
         AzRM
@@ -82,7 +82,7 @@ Function Get-OAuthToken {
             # AZ PowerShell Client ID
             $clientid = "1950a258-227b-4e31-a9cf-717495945fc2"
             $scope = "https://management.azure.com/.default"
-            $redirectUri = "urn:ietf:wg:oauth:2.0:oob"    
+            $redirectUri = "https://login.microsoftonline.com/common/oauth2/nativeclient"    
             }
         Default { Write-Error "Service Not Implemented" -ErrorAction Stop }
     }
