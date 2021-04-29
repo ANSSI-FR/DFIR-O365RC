@@ -21,7 +21,7 @@
         [Parameter(Mandatory = $true)]
         [DateTime]$StartDate,
         [Parameter(Mandatory = $false)]
-        [boolean]$Allevents=$false,
+        [boolean]$Allevents=$true,
         [Parameter(Mandatory = $false)]
         [boolean]$DeviceCode=$false,
         [Parameter(Mandatory = $false)]
