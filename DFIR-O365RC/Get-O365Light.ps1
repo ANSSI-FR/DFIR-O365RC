@@ -57,7 +57,7 @@
 
     $myObject = [PSCustomObject]@{
         GroupName= "AzureAD";
-        Operations = '"Register connector",Verify domain","Add verified domain","Remove verified domain","Disable Desktop Sso for a specific domain","Add application","Add app role assignment to service principal","Update application","Update application – Certificates and secrets management","Update application – Certificates and secrets management ","Add delegated permission grant","Add OAuth2PermissionGrant","Add unverified domain","Add group", "Add member to group", "Delete group", "Remove member from group", "Update group","Consent to application", "Add app role assignment grant to user", "Add delegation entry", "Add service principal", "Add service principal credentials", "Remove delegation entry", "Remove service principal", "Remove service principal credentials", "Set delegation entry", "Add member to role", "Remove member from role",  "Add app role assignment grant to user", "New-ConditionalAccessPolicy", "Set-AdminAuditLogConfig", "Set-ConditionalAccessPolicy", "Update domain", "Set federation settings on domain", "Set domain authentication", "Add partner to company", "Add domain to company"'
+        Operations = '"Register connector","Verify domain","Add verified domain","Remove verified domain","Disable Desktop Sso for a specific domain","Add application","Add app role assignment to service principal","Update application","Update application – Certificates and secrets management","Update application – Certificates and secrets management ","Add delegated permission grant","Add OAuth2PermissionGrant","Add unverified domain","Add group", "Add member to group", "Delete group", "Remove member from group", "Update group","Consent to application", "Add app role assignment grant to user", "Add delegation entry", "Add service principal", "Add service principal credentials", "Remove delegation entry", "Remove service principal", "Remove service principal credentials", "Set delegation entry", "Add member to role", "Remove member from role",  "Add app role assignment grant to user", "New-ConditionalAccessPolicy", "Set-AdminAuditLogConfig", "Set-ConditionalAccessPolicy", "Update domain", "Set federation settings on domain", "Set domain authentication", "Add partner to company", "Add domain to company"'
     }
 
     $Alloperations += $myObject
@@ -133,7 +133,7 @@
     if ((Test-Path $unifiedauditfolder) -eq $false){New-Item $unifiedauditfolder -Type Directory}
     "Processing O365 logs for day $($datetoprocess)"| Write-Log -LogPath $logfile
     $token = Get-MsalToken -Silent -PublicClientApplication $app -LoginHint $user -Scopes "https://outlook.office365.com/.default"    
-    $sessionName = "EXO_" + $datetoprocess
+    $sessionName = "EXO_" + [guid]::NewGuid().ToString()
     $tenant = ($token.Account.UserName).split("@")[1]
     $outputdate = "{0:yyyy-MM-dd}" -f ($datetoprocess)
     $foldertoprocess = $unifiedauditfolder + "\" + $datetoprocess
@@ -156,7 +156,7 @@
                 Get-PSSession | Remove-PSSession -Confirm:$false
                 $token = Get-MsalToken -Silent -PublicClientApplication $app -LoginHint $user -Scopes "https://outlook.office365.com/.default"
                 Start-Sleep -Seconds 15
-                $sessionName = "EXO_" + $operationsset.GroupName
+                $sessionName = "EXO_" + [guid]::NewGuid().ToString()
                 Connect-EXOPsearchUnified -token $token -sessionName $sessionName -logfile $logfile
                 $trysearch = Search-UnifiedAuditLog -StartDate $newstartdate -EndDate $newenddate -operations $operationsset.Operations  -ResultSize 1
                 }
@@ -168,8 +168,7 @@
                     {
                         "More than 50000 $($operationsset.GroupName) records between {0:yyyy-MM-dd} {0:HH:mm:ss} and {1:yyyy-MM-dd} {1:HH:mm:ss} - some records might be missing" -f ($newstarthour,$newendhour) | Write-Log -LogPath $logfile -LogLevel "Warning" 
                     }
-                        $sessionName  = ((get-date -Format 'u').Tostring()).replace(" ","_") 
-                        #$sessionName = (Get-Random).tostring()
+                        $sessionName  = [guid]::NewGuid().ToString()
                         Get-LargeUnifiedAuditLog -sessionName $sessionName -StartDate $newstartdate -EndDate $newenddate -operations $operationsset.Operations -outputfile $outputfile -logfile $logfile -requesttype "Operations"
                 }
             }
