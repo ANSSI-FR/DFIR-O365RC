@@ -82,7 +82,7 @@ Function Get-OAuthToken {
             # AZ PowerShell Client ID
             $clientid = "1950a258-227b-4e31-a9cf-717495945fc2"
             $scope = "https://management.azure.com/.default"
-            $redirectUri = "https://login.microsoftonline.com/common/oauth2/nativeclient"    
+            $redirectUri = "https://login.microsoftonline.com/common/oauth2/nativeclient"   
             }
         Default { Write-Error "Service Not Implemented" -ErrorAction Stop }
     }
@@ -339,36 +339,46 @@ Function Get-LargeUnifiedAuditLog {
         do {
             try {
             # Using ReturnLargeSet to get back up to 50k records, 5k at a time
-            if($requesttype -eq "Records")
-            {
-            $o = Search-UnifiedAuditLog -StartDate $startdate -EndDate $enddate -RecordType $recordtype -SessionId $sessionName -SessionCommand ReturnLargeSet -ResultSize 5000 -ErrorAction Stop   
-            $n = ($o | measure-object).count                        
+				if($requesttype -eq "Records")
+				{
+					$o = Search-UnifiedAuditLog -StartDate $startdate -EndDate $enddate -RecordType $recordtype -SessionId $sessionName -SessionCommand ReturnLargeSet -ResultSize 5000 -ErrorAction Stop
+					$n = ($o | measure-object).count
+					$f = (($o | Select-Object -Property ResultCount -Unique).ResultCount -eq 0) -or (($o | Select-Object -Property ResultIndex -Unique).ResultIndex -eq -1)
+				}
+				elseif($requesttype -eq "Operations")
+				{
+					$o = Search-UnifiedAuditLog -StartDate $startdate -EndDate $enddate -Operations $operations -SessionId $sessionName -SessionCommand ReturnLargeSet -ResultSize 5000 -ErrorAction Stop                        
+					$n = ($o | measure-object).count
+					$f = (($o | Select-Object -Property ResultCount -Unique).ResultCount -eq 0) -or (($o | Select-Object -Property ResultIndex -Unique).ResultIndex -eq -1)
+				}
+				elseif($requesttype -eq "freetext")
+				{
+					$o = Search-UnifiedAuditLog -StartDate $startdate -EndDate $enddate -FreeText $searchstring -SessionId $sessionName -SessionCommand ReturnLargeSet -ResultSize 5000 -ErrorAction Stop                        
+					$n = ($o | measure-object).count
+					$f = (($o | Select-Object -Property ResultCount -Unique).ResultCount -eq 0) -or (($o | Select-Object -Property ResultIndex -Unique).ResultIndex -eq -1)
+				}
+				elseif($requesttype -eq "IPAddresses")
+				{
+					$o = Search-UnifiedAuditLog -StartDate $startdate -EndDate $enddate -IPAddresses $searchstring -SessionId $sessionName -SessionCommand ReturnLargeSet -ResultSize 5000 -ErrorAction Stop                        
+					$n = ($o | measure-object).count
+					$f = (($o | Select-Object -Property ResultCount -Unique).ResultCount -eq 0) -or (($o | Select-Object -Property ResultIndex -Unique).ResultIndex -eq -1)
+				}
+				elseif($requesttype -eq "UserIds")
+				{
+					$o = Search-UnifiedAuditLog -StartDate $startdate -EndDate $enddate -UserIds $searchtable -SessionId $sessionName -SessionCommand ReturnLargeSet -ResultSize 5000 -ErrorAction Stop                        
+					$n = ($o | measure-object).count
+					$f = (($o | Select-Object -Property ResultCount -Unique).ResultCount -eq 0) -or (($o | Select-Object -Property ResultIndex -Unique).ResultIndex -eq -1)
+				}
+				"Got $($n) records" | Write-Log -LogPath $logfile -LogLevel "Info"                      
+				if ($f){
+					Start-Sleep -Seconds 300
+					throw "Error. Internal timeout"
+				}
+				$Stoploop = $true
             }
-            elseif($requesttype -eq "Operations")
-            {
-                $o = Search-UnifiedAuditLog -StartDate $startdate -EndDate $enddate -Operations $operations -SessionId $sessionName -SessionCommand ReturnLargeSet -ResultSize 5000 -ErrorAction Stop                        
-                $n = ($o | measure-object).count
-            }
-            elseif($requesttype -eq "freetext")
-            {
-                $o = Search-UnifiedAuditLog -StartDate $startdate -EndDate $enddate -FreeText $searchstring -SessionId $sessionName -SessionCommand ReturnLargeSet -ResultSize 5000 -ErrorAction Stop                        
-                $n = ($o | measure-object).count
-            }
-            elseif($requesttype -eq "IPAddresses")
-            {
-                $o = Search-UnifiedAuditLog -StartDate $startdate -EndDate $enddate -IPAddresses $searchstring -SessionId $sessionName -SessionCommand ReturnLargeSet -ResultSize 5000 -ErrorAction Stop                        
-                $n = ($o | measure-object).count
-            }
-            elseif($requesttype -eq "UserIds")
-            {
-                $o = Search-UnifiedAuditLog -StartDate $startdate -EndDate $enddate -UserIds $searchtable -SessionId $sessionName -SessionCommand ReturnLargeSet -ResultSize 5000 -ErrorAction Stop                        
-                $n = ($o | measure-object).count
-            }
-            $Stoploop = $true
-                }
             catch {
                 if ($Retrycount -gt 3){
-                    "Failed to dump $($recordtype) records 3 times - aborting" | Write-Log -LogPath $logfile -LogLevel "Error"
+                    "Failed to dump $($recordtype) records 4 times - aborting" | Write-Log -LogPath $logfile -LogLevel "Error"
                     $o = @()  
                     $n = 0
                     $Stoploop = $true
