@@ -54,7 +54,7 @@
     if ((Test-Path $unifiedauditfolder) -eq $false){New-Item $unifiedauditfolder -Type Directory}
     "Processing O365 logs for day $($datetoprocess)"| Write-Log -LogPath $logfile
     $token = Get-MsalToken -Silent -PublicClientApplication $app -LoginHint $user -Scopes "https://outlook.office365.com/.default"    
-    $sessionName = "EXO_" + $datetoprocess
+    $sessionName = "EXO_" + [guid]::NewGuid().ToString()
     $tenant = ($token.Account.UserName).split("@")[1]
     $outputdate = "{0:yyyy-MM-dd}" -f ($datetoprocess)
     $foldertoprocess = $unifiedauditfolder + "\" + $datetoprocess
@@ -75,7 +75,7 @@
                 Get-PSSession | Remove-PSSession -Confirm:$false
                 $token = Get-MsalToken -Silent -PublicClientApplication $app -LoginHint $user -Scopes "https://outlook.office365.com/.default"
                 Start-Sleep -Seconds 15
-                $sessionName = "EXO_" + $operationsset.GroupName
+                $sessionName = "EXO_" + [guid]::NewGuid().ToString()
                 Connect-EXOPsearchUnified -token $token -sessionName $sessionName -logfile $logfile
                 $trysearch = Search-UnifiedAuditLog -StartDate $newstartdate -EndDate $newenddate -RecordType $RecordType  -ResultSize 1
                 }
@@ -87,7 +87,7 @@
                     {
                     "More than 50000 $($RecordType) records between {0:yyyy-MM-dd} {0:HH:mm:ss} and {1:yyyy-MM-dd} {1:HH:mm:ss} - some records might be missing" -f ($newstarthour,$newendhour) | Write-Log -LogPath $logfile -LogLevel "Warning" 
                     }
-                $sessionName  = ((get-date -Format 'u').Tostring()).replace(" ","_") 
+                $sessionName  = [guid]::NewGuid().ToString()
                 Get-LargeUnifiedAuditLog -sessionName $sessionName -StartDate $newstartdate -EndDate $newenddate -RecordType $recordtype -outputfile $outputfile -logfile $logfile -requesttype "Records"
                 }        
         }    
