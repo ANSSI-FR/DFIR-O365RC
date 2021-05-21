@@ -24,8 +24,8 @@ The two data sources can be queried from different endpoints:
 
 | Data source / Endpoint  | History  | Performance  |  Scope | Pre-requisites (OS or Azure) |
 |---|---|---|---|---|
-| Unified Audit Logs / [Exchange Online PowerShell](https://docs.microsoft.com/en-us/powershell/module/exchange/search-unifiedauditlog?view=exchange-ps)  | 90 days  |  Poor | All Office 365 logs (Azure AD audit included)  | None | 
-|  Unified Audit Logs / [Office 365 Management API](https://docs.microsoft.com/en-us/office/office-365-management-api/office-365-management-apis-overview) |  7 days |  Good |  All Office 365 logs (Azure AD audit included) | Azure App registration |  
+| Unified Audit Logs / [Exchange Online PowerShell](https://docs.microsoft.com/en-us/powershell/module/exchange/search-unifiedauditlog?view=exchange-ps)  | 90 days  |  Poor | All Office 365 logs (Azure AD included)  | None | 
+|  Unified Audit Logs / [Office 365 Management API](https://docs.microsoft.com/en-us/office/office-365-management-api/office-365-management-apis-overview) |  7 days |  Good |  All Office 365 logs (Azure AD included) | Azure App registration |  
 |  Azure AD Logs / [Azure AD PowerShell Preview](https://docs.microsoft.com/en-us/azure/active-directory/reports-monitoring/reference-powershell-reporting) |  30 days | Good  |  Azure AD sign-ins and audit events only |  Windows OS only | 
 |  Azure AD Logs / [MS Graph API](https://docs.microsoft.com/en-us/graph/api/overview?view=graph-rest-1.0) |  30 days | Good  |  Azure AD sign-ins and audit events only |  None | 
 
