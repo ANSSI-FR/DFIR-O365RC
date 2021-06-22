@@ -39,6 +39,8 @@ DFIR-O365RC will fetch data from:
 
 In case you are also investigating other Azure resources (IaaS, PaaS...) DFIR-O365RC can also fetch data from Azure [Activity logs](https://docs.microsoft.com/en-us/azure/azure-monitor/essentials/activity-log) using the *[Azure Monitor RESTAPI](https://docs.microsoft.com/en-us/rest/api/monitor/)*. History is 90 days and it works on *PowerShell Core*.
 
+Additionally, if you are investigating malicious activity inside Exchange Online, Search-O365 function will fetch the Mailbox Audit Log, using Exchange Online PowerShell.
+
 As a result, DFIR-O365RC works also on Linux or Mac, as long as you have *PowerShell Core* and a browser in order to use device login.
 
 ## Installation and pre-requisites <a name="install"></a>
@@ -108,7 +110,7 @@ The module has 6 functions:
 | Get-AADLogs  | Azure AD Logs/30 days  |  Good | All Azure AD logs  | Get tenant general information, all Azure sign-ins and audit logs. Azure AD sign-ins logs have more information than Azure AD logs retrieved via Unified audit logs. | 
 | Get-AADApps  | Azure AD Logs/30 days  |  Good | A subset of Azure AD logs only  | Get Azure audit logs related to Azure applications and service principals only. The logs are enriched with application or service principal object information. | 
 | Get-AADDevices  | Azure AD Logs/30 days  |  Good | A subset of Azure AD logs only  | Get Azure audit logs related to Azure AD joined or registered devices only. The logs are enriched with device object information. | 
-| Search-O365  | Unified audit logs/90 days  |  Depends on the query | A subset of unified audit logs only  | Search for activity related to a particular user, IP address or use the *freetext* query. | 
+| Search-O365  | Unified audit logs/90 days  |  Depends on the query | A subset of unified audit logs only  | Search for activity related to a particular user, IP address or use the *freetext* query. For **users** this cmdlet will fetch Mailbox Audit Log| 
 | Get-AzRMActivityLogs  | Azure Activity logs/90 days  |  Good | All Azure Activity logs  | Get all Azure activity logs for a given subscription or on every subscription the account running the function has access to | 
 
  When querying *Unified audit logs* you are limited to 3 concurrent *Exchange Online Powershell* sessions. DFIR-O365RC will try to use all available sessions, please close any existing session before launching the log collection.
@@ -199,6 +201,10 @@ Search-O365 -StartDate $startdate -Enddate $enddate -IPAddresses "X.X.X.X,Y.Y.Y.
 #Retrieve events related to users user1@contoso.com and user2@constoso.com , argument is a system.array object
 Search-O365 -StartDate $startdate -Enddate $enddate -UserIds "user1@contoso.com", "user2@contoso.com"
 ```
+
+When searching for specific **users**, `Search-O365` will also search in the Mailbox Audit Log.
+
+
 To retrieve all Azure Activity logs the account has access to launch the following command, available subscriptions will be displayed:
 ```
 $enddate = get-date
@@ -223,7 +229,7 @@ All files generated are in JSON format.
 - Get-O365Full creates folders named after the current date using the *YYYY-MM-DD* format in the *O365_unified_audit_logs*, in each directory a file called *UnifiedAuditLog_%FQDN%_YYYY-MM-DD_HH-00-00.json* is created.
 - Get-O365Light creates folders named after the current date using the *YYYY-MM-DD* format in the *O365_unified_audit_logs*, in each directory a file called *UnifiedAuditLog_%FQDN%_YYYY-MM-DD.json* is created.
 - Get-DefenderforO365 creates folders named after the current date using the *YYYY-MM-DD* format in the *O365_unified_audit_logs*, in each directory a file called *UnifiedAuditLog_%FQDN%_YYYY-MM-DD_DefenderforO365.json* is created.
-- Search-O365 creates folders named after the current date using the *YYYY-MM-DD* format in the *O365_unified_audit_logs*, in each directory a file called *UnifiedAuditLog_%FQDN%_YYYY-MM-DD_%searchtype%.json* is created, where *searchtype* can have the values "*Freetext*", "*IPAddresses*" or "*UserIds*".
+- Search-O365 creates folders named after the current date using the *YYYY-MM-DD* format in the *O365_unified_audit_logs*, in each directory a file called *UnifiedAuditLog_%FQDN%_YYYY-MM-DD_%searchtype%.json* is created, where *searchtype* can have the values "*Freetext*", "*IPAddresses*" or "*UserIds*". *MailboxAuditLog_%FQDN%_YYYY-MM-DD_UserIds.json* files can also be created when investigating activity from users.
 
 Launching the various functions will generate a similar directory structure:
 
@@ -262,6 +268,7 @@ DFIR-O365_Logs
 │   └───YYYY-MM-DD
 │       │   UnifiedAuditLog_%FDQN%_YYYY-MM-DD.json
 │       │   UnifiedAuditLog_%FQDN%_YYYY-MM-DD_freetext.json
+│       │   MailboxAuditLog_%FQDN%_YYYY-MM-DD_UserIds.json
 │       │   UnifiedAuditLog_%FQDN%_YYYY-MM-DD_DefenderforO365.json
 │       │   UnifiedAuditLog_%FQDN%_YYYY-MM-DD_HH-00-00.json
 │       │   ...
