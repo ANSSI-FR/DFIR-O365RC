@@ -110,7 +110,7 @@ The module has 6 functions:
 | Get-AADLogs  | Azure AD Logs/30 days  |  Good | All Azure AD logs  | Get tenant general information, all Azure sign-ins and audit logs. Azure AD sign-ins logs have more information than Azure AD logs retrieved via Unified audit logs. | 
 | Get-AADApps  | Azure AD Logs/30 days  |  Good | A subset of Azure AD logs only  | Get Azure audit logs related to Azure applications and service principals only. The logs are enriched with application or service principal object information. | 
 | Get-AADDevices  | Azure AD Logs/30 days  |  Good | A subset of Azure AD logs only  | Get Azure audit logs related to Azure AD joined or registered devices only. The logs are enriched with device object information. | 
-| Search-O365  | Unified audit logs/90 days  |  Depends on the query | A subset of unified audit logs only  | Search for activity related to a particular user, IP address or use the *freetext* query. For **users** this cmdlet will fetch Mailbox Audit Log| 
+| Search-O365  | Unified audit logs/90 days  |  Depends on the query | A subset of unified audit logs only  | Search for activity related to a particular user, IP address or use the *freetext* query. When searching **user** activity this cmdlet will also fetch the Mailbox Audit Log| 
 | Get-AzRMActivityLogs  | Azure Activity logs/90 days  |  Good | All Azure Activity logs  | Get all Azure activity logs for a given subscription or on every subscription the account running the function has access to | 
 
  When querying *Unified audit logs* you are limited to 3 concurrent *Exchange Online Powershell* sessions. DFIR-O365RC will try to use all available sessions, please close any existing session before launching the log collection.
@@ -202,7 +202,7 @@ Search-O365 -StartDate $startdate -Enddate $enddate -IPAddresses "X.X.X.X,Y.Y.Y.
 Search-O365 -StartDate $startdate -Enddate $enddate -UserIds "user1@contoso.com", "user2@contoso.com"
 ```
 
-When searching for specific **users**, `Search-O365` will also search in the Mailbox Audit Log.
+When searching for specific **users**, `Search-O365` will also search in the Mailbox Audit Log. Because depending on the user's licence level and settings, audit logs might not be present in the unified audit logs.
 
 
 To retrieve all Azure Activity logs the account has access to launch the following command, available subscriptions will be displayed:
