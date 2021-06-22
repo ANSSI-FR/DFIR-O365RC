@@ -258,7 +258,9 @@ param (
         [Parameter(Mandatory = $true)]   
         [string]$sessionName,
         [Parameter(Mandatory = $true)]
-        [string]$Logfile
+        [string]$Logfile,
+        [Parameter(Mandatory = $false)]
+        [array]$commandNames = "Search-UnifiedAuditLog"
     )
 
 
@@ -271,14 +273,21 @@ $Credtoken = New-Object System.Management.Automation.PSCredential -ArgumentList 
     do {
         try {
         $Session = New-PSSession -Name $sessionName -ConfigurationName Microsoft.Exchange -ConnectionUri 'https://outlook.office365.com/PowerShell-LiveId?BasicAuthToOAuthConversion=true' -Credential $Credtoken -Authentication Basic -AllowRedirection -ErrorAction Stop
-        Import-Module (Import-PSSession $Session -AllowClobber -CommandName 'Search-UnifiedAuditLog' -ErrorAction Stop) -Global -WarningAction 'SilentlyContinue' 
+        Import-Module (Import-PSSession $Session -AllowClobber -CommandName $commandNames -ErrorAction Stop) -Global -WarningAction 'SilentlyContinue' 
         "EXO session $($sessionName) successfully created" | Write-Log -LogPath $logfile                           
         $Stoploop = $true
             }
         catch {
-            if ($Retrycount -gt 2){
-                "Failed to create EXO session $($sessionName) 3 times - aborting" | Write-Log -LogPath $logfile -LogLevel "Error"  
+            if ($Retrycount -gt 3){
+                "Failed to create EXO session $($sessionName) 4 times - aborting" | Write-Log -LogPath $logfile -LogLevel "Error"  
                 $Stoploop = $true
+                }
+            elseif ($Retrycount -eq 3)
+                {
+                $errormessage = $_.Exception.Message
+                "Failed to create EXO session $($sessionName) - sleeping and retrying  - $($errormessage)" | Write-Log -LogPath $logfile -LogLevel "Warning"     
+                Start-Sleep -Seconds 180
+                $Retrycount = $Retrycount + 1                  
                 }
             elseif ($Retrycount -eq 2)
                 {
@@ -406,4 +415,65 @@ Function Get-LargeUnifiedAuditLog {
             }
         }
     } Until ($n -eq 0)
+}
+
+Function Get-MailboxAuditLog {
+    param 
+    (
+        [Parameter(Mandatory = $true)]
+        [string]$outputfile,
+        [Parameter(Mandatory = $true)]
+        [System.Array]$UserIds,
+        [Parameter(Mandatory = $true)]
+        [datetime]$StartDate,
+        [Parameter(Mandatory = $true)]
+        [datetime]$EndDate,
+        [Parameter(Mandatory = $true)]
+        [string]$logfile
+    )
+
+    foreach ($userId in $UserIds)
+    {
+        $Stoploop = $false
+        [int]$Retrycount = "0"
+        do {
+            try {
+                $o = Search-MailboxAuditLog -StartDate $startdate -EndDate $enddate -Identity $userId -LogonTypes Admin,Delegate,Owner -IncludeInactiveMailbox -ShowDetails -ResultSize 250000 -ErrorAction Stop                        
+                $n = ($o | measure-object).count
+				"Got $($n) records" | Write-Log -LogPath $logfile -LogLevel "Info"
+				$Stoploop = $true
+            }
+            catch {
+				if ($_.CategoryInfo.Reason -eq "ManagementObjectNotFoundException") {
+                    "$($userId) does not have a mailbox" | Write-Log -LogPath $logfile -LogLevel "Warning"
+                    $o = @()
+                    $n = 0
+                    $Stoploop = $true
+				}
+                else
+                {
+                    if ($Retrycount -gt 3){
+                        "Failed to dump MailboxAuditLog for $($userId) 4 times - aborting" | Write-Log -LogPath $logfile -LogLevel "Error"
+                        $o = @()
+                        $n = 0
+                        $Stoploop = $true
+                    }
+                    else {
+                        $errormessage = $_.Exception.Message
+                        "Failed to dump MailboxAuditLog for $($userId) - sleeping and retrying  - $($errormessage)" | Write-Log -LogPath $logfile -LogLevel "Warning"   
+                        Start-Sleep -Seconds 1
+                        $Retrycount = $Retrycount + 1
+                    }
+                }
+            }
+        } While ($Stoploop -eq $false)
+        if ($n -eq 250000){
+            "More than 250000 events in one day, consider logs incomplete between $($startdate) and $($enddate) for $($userId)" | Write-Log -LogPath $logfile -LogLevel "Warning"
+        }
+        if ($n -gt 0){
+            $o | ConvertTo-Json -Depth 99 | out-file $outputfile -encoding UTF8 -append
+            $o = @()
+            $n = 0
+        }
+    }
 }

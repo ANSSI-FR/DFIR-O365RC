@@ -83,7 +83,8 @@
     if ((Test-Path $foldertoprocess) -eq $false){New-Item $foldertoprocess -Type Directory}
 
     $outputfile = $foldertoprocess + "\UnifiedAuditLog_" + $tenant + "_" + $outputdate + "_" + $requesttype + ".json"
-    Connect-EXOPsearchUnified -token $token -sessionName $sessionName -logfile $logfile
+    $commandNames = "Search-UnifiedAuditLog","Search-MailboxAuditLog"
+    Connect-EXOPsearchUnified -token $token -sessionName $sessionName -logfile $logfile -commandNames $commandNames
 
 
         $token = Get-MsalToken -Silent -PublicClientApplication $app -LoginHint $user -Scopes "https://outlook.office365.com/.default"
@@ -103,7 +104,8 @@
                 $token = Get-MsalToken -Silent -PublicClientApplication $app -LoginHint $user -Scopes "https://outlook.office365.com/.default"
                 Start-Sleep -Seconds 15
                 $sessionName = "EXO_" + [guid]::NewGuid().ToString()
-                Connect-EXOPsearchUnified -token $token -sessionName $sessionName -logfile $logfile
+                $commandNames = "Search-UnifiedAuditLog","Search-MailboxAuditLog"
+                Connect-EXOPsearchUnified -token $token -sessionName $sessionName -logfile $logfile -commandNames $commandNames
                 if($requesttype -eq "freetext")
                     {$trysearch = Search-UnifiedAuditLog -StartDate $newstartdate -EndDate $newenddate -FreeText $searchstring -ResultSize 1}
                 elseif($requesttype -eq "IPAddresses")
@@ -114,7 +116,7 @@
             if($trysearch)
                 {
                     $countobjects = $trysearch.ResultCount
-                    "Dumping $($countobjects) records between {0:yyyy-MM-dd} {0:HH:mm:ss} and {1:yyyy-MM-dd} {1:HH:mm:ss}" -f ($newstartdate,$newenddate) | Write-Log -LogPath $logfile
+                    "Dumping $($countobjects) UAL records between {0:yyyy-MM-dd} {0:HH:mm:ss} and {1:yyyy-MM-dd} {1:HH:mm:ss}" -f ($newstartdate,$newenddate) | Write-Log -LogPath $logfile
                     if($countobjects -gt 50000)
                     {
                         "More than 50000 records between {0:yyyy-MM-dd} {0:HH:mm:ss} and {1:yyyy-MM-dd} {1:HH:mm:ss} - some records might be missing" -f ($newstarthour,$newendhour) | Write-Log -LogPath $logfile -LogLevel "Warning" 
@@ -126,6 +128,28 @@
                             Get-LargeUnifiedAuditLog -sessionName $sessionName -StartDate $newstartdate -EndDate $newenddate -searchstring $searchstring -outputfile $outputfile -logfile $logfile -requesttype $requesttype  
                         }
                         
+                }
+
+                $outputfile = $foldertoprocess + "\MailboxAuditLog_" + $tenant + "_" + $outputdate + "_" + $requesttype + ".json"
+                if($requesttype -eq "UserIds")
+                {
+                    try {
+                        Search-MailboxAuditLog -StartDate $newstartdate -EndDate $newenddate -Identity $searchstring[0] -LogonTypes Admin,Delegate,Owner -IncludeInactiveMailbox -ShowDetails -ResultSize 1 -ErrorAction Stop
+                    }
+                    catch {
+                        if ($_.CategoryInfo.Reason -ne "ManagementObjectNotFoundException") 
+                        {
+                            "Retrieving Mailbox audit logs failed, rebuilding EXO session" | Write-Log -LogPath $logfile -LogLevel "Warning"  
+                            Get-PSSession | Remove-PSSession -Confirm:$false
+                            $token = Get-MsalToken -Silent -PublicClientApplication $app -LoginHint $user -Scopes "https://outlook.office365.com/.default"
+                            Start-Sleep -Seconds 15
+                            $sessionName = "EXO_" + [guid]::NewGuid().ToString()
+                            $commandNames = "Search-UnifiedAuditLog","Search-MailboxAuditLog"
+                            Connect-EXOPsearchUnified -token $token -sessionName $sessionName -logfile $logfile -commandNames $commandNames
+                        }
+                    }
+                    "Dumping MailboxAudit records between {0:yyyy-MM-dd} {0:HH:mm:ss} and {1:yyyy-MM-dd} {1:HH:mm:ss}" -f ($newstartdate,$newenddate) | Write-Log -LogPath $logfile
+                    Get-MailboxAuditLog -StartDate $newstartdate -EndDate $newenddate -outputfile $outputfile -logfile $logfile -UserIds $searchstring
                 }
             
             
@@ -178,7 +202,7 @@ For ($d=0; $d -le $totalloops ; $d++)
     $datetoprocess = ($newstartdate.ToString("yyyy-MM-dd"))
     $jobname = "UnifiedAudit" + $datetoprocess
  
-    Start-RSJob -Name $jobname -ScriptBlock $Launchsearch -FunctionsToImport Connect-EXOPsearchUnified, write-log, Get-LargeUnifiedAuditLog -ArgumentList $app, $user, $newstartdate, $newenddate, $requesttype, $searchstring , $currentpath
+    Start-RSJob -Name $jobname -ScriptBlock $Launchsearch -FunctionsToImport Connect-EXOPsearchUnified, write-log, Get-LargeUnifiedAuditLog,Get-MailboxAuditLog -ArgumentList $app, $user, $newstartdate, $newenddate, $requesttype, $searchstring , $currentpath
 
     $nbjobrunning = (Get-RSJob | where-object {$_.State -eq "running"}  | Measure-Object).count
     while($nbjobrunning -ge 3)

@@ -53,7 +53,7 @@ NestedModules = @(
 )
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-FunctionsToExport =  'Get-OAuthToken', 'Get-RestAPIResponse', 'Connect-EXOPsearchUnified', 'Get-LargeUnifiedAuditLog', 'Get-AADApps', 'Get-AADLogs', 'Get-O365Full', 'Get-O365Light', 'Get-DefenderforO365', 'Search-O365', 'Get-AADDevices', 'Get-AzRMActivityLogs', 'Write-Log'
+FunctionsToExport =  'Get-OAuthToken', 'Get-RestAPIResponse', 'Connect-EXOPsearchUnified', 'Get-LargeUnifiedAuditLog', 'Get-MailboxAuditLog', 'Get-AADApps', 'Get-AADLogs', 'Get-O365Full', 'Get-O365Light', 'Get-DefenderforO365', 'Search-O365', 'Get-AADDevices', 'Get-AzRMActivityLogs', 'Write-Log'
 
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
