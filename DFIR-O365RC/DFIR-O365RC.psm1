@@ -51,7 +51,7 @@ Function Get-OAuthToken {
     param (
         
         [Parameter(Mandatory = $true)]
-        [ValidateSet("EXO","MSGraph","AzRM")]
+        [ValidateSet("EXO","MSGraph","AzRM","AzDevOps")]
         [string]$Service,
         [Parameter(Mandatory = $false, ParameterSetName="silent")]
         [boolean]$silent=$false,
@@ -83,6 +83,13 @@ Function Get-OAuthToken {
             $clientid = "1950a258-227b-4e31-a9cf-717495945fc2"
             $scope = "https://management.azure.com/.default"
             $redirectUri = "https://login.microsoftonline.com/common/oauth2/nativeclient"   
+            }
+        AzDevOps
+            {
+            # AZ PowerShell Client ID
+            $clientid = "1950a258-227b-4e31-a9cf-717495945fc2"
+            $scope = "499b84ac-1321-427f-aa17-267ca6975798/user_impersonation"
+            $redirectUri = "https://login.microsoftonline.com/common/oauth2/nativeclient"       
             }
         Default { Write-Error "Service Not Implemented" -ErrorAction Stop }
     }
@@ -164,16 +171,17 @@ Function Get-RestAPIResponse {
         [Parameter(Mandatory = $true)]
         [string]$user,
         [Parameter(Mandatory = $true)]
-        [ValidateSet("MSGraph","AzRM")]
+        [ValidateSet("MSGraph","AzRM","AzDevOps")]
         [string]$RESTAPIService,
         [Parameter(Mandatory = $true)]
         [string]$Logfile
     )
     if($RESTAPIService -eq "MSGraph")
         {$token = Get-MsalToken -Silent -PublicClientApplication $app -LoginHint $user -Scopes "https://graph.microsoft.com/.default"}
-    else
+    elseif($RESTAPIService -eq "AzRM")
         {$token = Get-MsalToken -Silent -PublicClientApplication $app -LoginHint $user -Scopes "https://management.azure.com/.default"}
-    
+    else
+        {$token = Get-MsalToken -Silent -PublicClientApplication $app -LoginHint $user -Scopes "499b84ac-1321-427f-aa17-267ca6975798/user_impersonation"}
     $APIresults = @()
 
     $Stoploop = $false
@@ -201,9 +209,9 @@ Function Get-RestAPIResponse {
         While ($Stoploop -eq $false)
 
         if($Data)
-        {
-            $APIresults+=$Data.Value
-            while(($null -ne $Data."@odata.nextLink") -or  ($null -ne $Data.nextLink)) {        
+        {   if($RESTAPIService -eq "AzDevOps"){$APIresults+=$Data.decoratedAuditLogEntries} 
+            else{$APIresults+=$Data.Value}
+            while(($null -ne $Data."@odata.nextLink") -or  ($null -ne $Data.nextLink) -or ($Data.hasMore -eq $true)) {        
             $Stoploop = $false
              [int]$Retrycount = "0"
               do {
@@ -212,10 +220,15 @@ Function Get-RestAPIResponse {
                         {
                         $Data = Invoke-RestMethod -Uri $Data."@odata.nextLink" -Headers @{Authorization = "Bearer $($token.AccessToken)"} -Method Get -ContentType "application/json" -ErrorAction Stop
                         }
-                    else {
+                    elseif($RESTAPIService -eq "AzRM") {
                         $Data = Invoke-RestMethod -Uri $Data.nextLink -Headers @{Authorization = "Bearer $($token.AccessToken)"} -Method Get -ContentType "application/json" -ErrorAction Stop
                         }
-                    $APIresults+=$Data.value
+                    else{
+                        $urisuite = (($uri -split "startTime")[0]) + "continuationToken=$($Data.continuationToken)&api-version=6.0-preview.1"
+                        $Data = Invoke-RestMethod -Uri $urisuite -Headers @{Authorization = "Bearer $($token.AccessToken)"} -Method Get -ContentType "application/json" -ErrorAction Stop
+                        }
+                    if($RESTAPIService -eq "AzDevOps"){$APIresults+=$Data.decoratedAuditLogEntries} 
+                    else{$APIresults+=$Data.Value}
                     $Stoploop = $true
                      }
                 catch {
@@ -233,9 +246,10 @@ Function Get-RestAPIResponse {
                             "Token has expired renewing $($RESTAPIService) token" | Write-Log -LogPath $logfile -LogLevel "Warning"  
                             if($RESTAPIService -eq "MSGraph")
                             {$token = Get-MsalToken -Silent -PublicClientApplication $app -LoginHint $user -Scopes "https://graph.microsoft.com/.default"}
-                        else
+                        elseif($RESTAPIService -eq "AzRM")
                             {$token = Get-MsalToken -Silent -PublicClientApplication $app -LoginHint $user -Scopes "https://management.azure.com/.default"}
-                        
+                        else
+                            {$token = Get-MsalToken -Silent -PublicClientApplication $app -LoginHint $user -Scopes "499b84ac-1321-427f-aa17-267ca6975798/user_impersonation"}
                             }
                         $Retrycount = $Retrycount + 1
                         }

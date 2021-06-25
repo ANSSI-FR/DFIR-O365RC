@@ -8,7 +8,7 @@
 RootModule = '.\DFIR-O365RC.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.1.0'
+ModuleVersion = '1.2.0'
 
 # Supported PSEditions
 CompatiblePSEditions = 'Core', 'Desktop'
@@ -23,7 +23,7 @@ Author = 'leonard.savina@ssi.gouv.fr'
 CompanyName = 'CERT-FR'
 
 # Description of the functionality provided by this module
-Description = 'The DFIR-O365RC module will extract logs from O365 Unified audit logs, Azure AD signin logs and Azure AD audit logs'
+Description = 'The DFIR-O365RC module will extract logs from O365 Unified audit logs, Azure AD signin logs, Azure AD audit logs, Azure RM and DevOps activity logs'
 
 
 # Minimum version of the Windows PowerShell engine required by this module
@@ -49,11 +49,12 @@ NestedModules = @(
     'Search-O365.ps1',
     'Get-AADDevices.ps1',
     'Get-AzRMActivityLogs.ps1',
+    'Get-AzDevOpsActivityLogs.ps1',
     'Get-AADLogs.ps1'
 )
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-FunctionsToExport =  'Get-OAuthToken', 'Get-RestAPIResponse', 'Connect-EXOPsearchUnified', 'Get-LargeUnifiedAuditLog', 'Get-MailboxAuditLog', 'Get-AADApps', 'Get-AADLogs', 'Get-O365Full', 'Get-O365Light', 'Get-DefenderforO365', 'Search-O365', 'Get-AADDevices', 'Get-AzRMActivityLogs', 'Write-Log'
+FunctionsToExport =  'Get-OAuthToken', 'Get-RestAPIResponse', 'Connect-EXOPsearchUnified', 'Get-LargeUnifiedAuditLog', 'Get-MailboxAuditLog', 'Get-AADApps', 'Get-AADLogs', 'Get-O365Full', 'Get-O365Light', 'Get-DefenderforO365', 'Search-O365', 'Get-AADDevices', 'Get-AzRMActivityLogs', 'Write-Log', 'Get-AzDevOpsActivityLogs'
 
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
@@ -69,13 +70,14 @@ PrivateData = @{
     PSData = @{
 
         # Tags applied to this module. These help with module discovery in online galleries.
-        Tags = @("O365","Security","Forensics","DFIR","Exchange","Defender","AzureAD","MSGraph")
+        Tags = @("O365","Security","Forensics","DFIR","Exchange","Defender","AzureAD","MSGraph","Azure", "DevOps")
 
 
         # ReleaseNotes of this module
         ReleaseNotes ='
         1.0.0 - Initial release
         1.1.0 - Added Get-AADDevices and Get-AzRMActivityLogs functions
+        1.2.0 - Added Get-AzDevOpsActivityLogs function and added mailobx audit logs retrieval to the Search-o365 function
          '
 
 

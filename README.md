@@ -22,7 +22,7 @@ The logs are generated in JSON format and retrieved from two main data sources:
 
 The two data sources can be queried from different endpoints:
 
-| Data source / Endpoint  | History  | Performance  |  Scope | Pre-requisites (OS or Azure) |
+| **Data source / Endpoint**  | **History**  | **Performance**  |  **Scope** | **Pre-requisites (OS or Azure)** |
 |---|---|---|---|---|
 | Unified Audit Logs / [Exchange Online PowerShell](https://docs.microsoft.com/en-us/powershell/module/exchange/search-unifiedauditlog?view=exchange-ps)  | 90 days  |  Poor | All Office 365 logs (Azure AD included)  | None | 
 |  Unified Audit Logs / [Office 365 Management API](https://docs.microsoft.com/en-us/office/office-365-management-api/office-365-management-apis-overview) |  7 days |  Good |  All Office 365 logs (Azure AD included) | Azure App registration |  
@@ -37,11 +37,13 @@ DFIR-O365RC will fetch data from:
 - Azure AD Logs using the *MS Graph API* because performance is good, history is 30 days and it works on *PowerShell Core*.
 - Unified Audit Logs using *Exchange online PowerShell* despite poor performance, history is 90 days and it works on *PowerShell Core*.
 
-In case you are also investigating other Azure resources (IaaS, PaaS...) DFIR-O365RC can also fetch data from Azure [Activity logs](https://docs.microsoft.com/en-us/azure/azure-monitor/essentials/activity-log) using the *[Azure Monitor RESTAPI](https://docs.microsoft.com/en-us/rest/api/monitor/)*. History is 90 days and it works on *PowerShell Core*.
+If you are investigating Exchange Online malicious activity, the Search-O365 function will also fetch the Mailbox Audit Log, using Exchange Online PowerShell.
 
-Additionally, if you are investigating malicious activity inside Exchange Online, Search-O365 function will fetch the Mailbox Audit Log, using Exchange Online PowerShell.
+In case you are also investigating other Azure resources (IaaS, PaaS...) DFIR-O365RC can also fetch data from Azure [Activity logs](https://docs.microsoft.com/en-us/azure/azure-monitor/essentials/activity-log) using the *[Azure Monitor RESTAPI](https://docs.microsoft.com/en-us/rest/api/monitor/)*. History is 90 days and it works on *PowerShell Core*. The Azure Activity log is primarily for activities that occur in Azure Resource Manager.
 
-As a result, DFIR-O365RC works also on Linux or Mac, as long as you have *PowerShell Core* and a browser in order to use device login.
+Additionally you can dump Azure [DevOps Activity logs](https://docs.microsoft.com/en-us/azure/devops/organizations/audit/azure-devops-auditing) using the *[Azure DevOps services RESTAPI](https://docs.microsoft.com/en-us/rest/api/azure/devops/audit/audit%20log/query?view=azure-devops-rest-6.1)*. History is 90 days and it works on *PowerShell Core*.
+
+Because all functions can run on *PowerShell Core*, DFIR-O365RC works also on Linux or Mac, as long as you have have a browser in order to use device login.
 
 ## Installation and pre-requisites <a name="install"></a>
 
@@ -98,11 +100,13 @@ In order to retrieve Azure AD [sign-ins logs](https://docs.microsoft.com/en-us/a
 
 If you need to retrieve also the Azure Activity logs you need the **Log Analytics Reader** role for the Azure subscription you are dumping the logs from.
 
+Finally if you need to collect the Azure DevOps Activity logs you need to grant the *Auditing\View audit log* permission to the user in the Azure DevOps organization you are dumping the logs from.
+
  ## Functions included in the module <a name="functions"></a>
 
-The module has 6 functions:
+The module has 9 functions:
 
-| Function name  | Data Source/History  | Performance  |  Completeness | Details |
+| **Function name**  | **Data Source/History**  | **Performance**  |  **Completeness** | **Details** |
 |---|---|---|---|---|
 |  Get-O365Full |  Unified audit logs/90 days |  Poor |  All unified audit logs | A subset of logs per *record type* can be retrieved. Use only on a small tenant or a short period of time |
 |  Get-O365Light |  Unified audit logs/90 days |  Good |  A subset of unified audit logs only | Only a subset of *operations* considered of interest is retrieved.   |
@@ -112,6 +116,8 @@ The module has 6 functions:
 | Get-AADDevices  | Azure AD Logs/30 days  |  Good | A subset of Azure AD logs only  | Get Azure audit logs related to Azure AD joined or registered devices only. The logs are enriched with device object information. | 
 | Search-O365  | Unified audit logs/90 days  |  Depends on the query | A subset of unified audit logs only  | Search for activity related to a particular user, IP address or use the *freetext* query. When searching **user** activity this cmdlet will also fetch the Mailbox Audit Log| 
 | Get-AzRMActivityLogs  | Azure Activity logs/90 days  |  Good | All Azure Activity logs  | Get all Azure activity logs for a given subscription or on every subscription the account running the function has access to | 
+| Get-AzDevOpsActivityLogs  | Azure DevOps Activity logs/90 days  |  Good | All Azure DevOps Activity logs  | Get all Azure DevOps activity logs for a given DevOps organization or on every DevOps organization the account running the function has access to | 
+
 
  When querying *Unified audit logs* you are limited to 3 concurrent *Exchange Online Powershell* sessions. DFIR-O365RC will try to use all available sessions, please close any existing session before launching the log collection.
 
@@ -205,11 +211,18 @@ Search-O365 -StartDate $startdate -Enddate $enddate -UserIds "user1@contoso.com"
 When searching for specific **users**, `Search-O365` will also search in the Mailbox Audit Log. Because depending on the user's licence level and settings, audit logs might not be present in the unified audit logs.
 
 
-To retrieve all Azure Activity logs the account has access to launch the following command, available subscriptions will be displayed:
+To retrieve all Azure Activity logs the account has access to, launch the following command, available subscriptions will be displayed:
 ```
 $enddate = get-date
 $startdate = $enddate.adddays(-90)
 Get-AzRMActivityLogs -StartDate $startdate -Enddate $enddate
+```
+
+To retrieve all Azure DevOps Activity logs the account has access to, launch the following command, available Azure DevOps organizations will be displayed:
+```
+$enddate = get-date
+$startdate = $enddate.adddays(-90)
+Get-AzDevOpsActivityLogs -StartDate $startdate -Enddate $enddate
 ```
 When using *PowerShell Core* the authentication process will require a *device code*, you will need to use the *devicecode* parameter and launch your browser, open the *https://microsoft.com/devicelogin* URL and enter the code provided by the following message:
   
@@ -226,6 +239,7 @@ All files generated are in JSON format.
 - Get-AADDevices creates a file named *AADDevices_%FQDN%.json* in the *azure_ad_devices* folder. 
 - Get-AADLogs creates folders named after the current date using the *YYYY-MM-DD* format in the *azure_ad_signin* folder, in each directory a file called *AADSigninLog_%FQDN%_YYYY-MM-DD_HH-00-00.json* is created for Azure AD sign-ins logs. A folder *azure_ad_audit* is also created and results are dumped in files named *AADAuditLog_%FQDN%_YYYY-MM-DD.json* for Azure AD audit logs. Finally a folder called *azure_ad_tenant* is created and the general tenant information written in a file named *AADTenant_%FQDN%.json*.
 - Get-AzRMActivityLogs creates folders named after the current date using the *YYYY-MM-DD* format in the *azure_rm_activity* folder, in each directory a file called *AzRM_%FQDN%_%SubscriptionID%_YYYY-MM-DD_HH-00-00.json* is created where %SubscriptionID% is the Azure subscription ID. A folder called *azure_rm_subscriptions* is created and each subscription information written in a file named *AzRMsubscriptions_%FQDN%.json*.
+- Get-AzDevOpsActivityLogs creates folders named after the current date using the *YYYY-MM-DD* format in the *azure_DevOps_activity* folder, in each directory a file called *AzDevOps_%FQDN%_%DevOpsOrganizationname%_YYYY-MM-DD_HH-00-00.json* is created where %DevOpsOrganizationname% is the Azure DevOps organization name. A folder called *azure_DevOps_orgs* is created and each azure DevOps organization information written in a file named *AzdevopsOrgs_%FQDN%.json.
 - Get-O365Full creates folders named after the current date using the *YYYY-MM-DD* format in the *O365_unified_audit_logs*, in each directory a file called *UnifiedAuditLog_%FQDN%_YYYY-MM-DD_HH-00-00.json* is created.
 - Get-O365Light creates folders named after the current date using the *YYYY-MM-DD* format in the *O365_unified_audit_logs*, in each directory a file called *UnifiedAuditLog_%FQDN%_YYYY-MM-DD.json* is created.
 - Get-DefenderforO365 creates folders named after the current date using the *YYYY-MM-DD* format in the *O365_unified_audit_logs*, in each directory a file called *UnifiedAuditLog_%FQDN%_YYYY-MM-DD_DefenderforO365.json* is created.
@@ -263,6 +277,13 @@ DFIR-O365_Logs
 │       │   ...
 └───azure_rm_subscriptions
 │    │   AzRMsubscriptions_%FQDN%.json
+└───azure_DevOps_activity
+│   │
+│   └───YYYY-MM-DD
+│       │   AzDevOps_%FQDN%_%DevOpsOrganisationname%_YYYY-MM-DD_HH-00-00.json
+│       │   ...
+└───azure_DevOps_orgs
+│    │   AzdevopsOrgs_%FQDN%.json
 └───O365_unified_audit_logs
 │   │
 │   └───YYYY-MM-DD
