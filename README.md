@@ -13,7 +13,7 @@
 
 ## Module description  <a name="description"></a>
 
-The DFIR-O365RC PowerShell module is a set of functions that allow the DFIR analyst to collect logs relevant for Office 365 Business Email Compromise investigations.
+The DFIR-O365RC PowerShell module is a set of functions that allow the DFIR analyst to collect logs relevant for Office 365 Business Email Compromise and Azure investigations.
 
 The logs are generated in JSON format and retrieved from two main data sources: 
 
