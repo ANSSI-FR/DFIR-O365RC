@@ -8,8 +8,7 @@
 4. [Functions included in the module](#functions)
 5. [Files generated](#files)
 
- 
-
+DFIR-O365RC was presented at the SSTIC 2021 (Symposium sur la sécurité des technologies de l'information et des communications). Slides and a recording of the presentation, in french language, are available [here](https://www.sstic.org/2021/presentation/collecte_de_journaux_office_365_avec_dfir-o365rc/).
 
 ## Module description  <a name="description"></a>
 
