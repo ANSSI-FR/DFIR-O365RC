@@ -1,6 +1,6 @@
 ![DFIR-O365RC](./logo.png)
 
-[![Docker Image CI](https://github.com/ldap389/DFIR-O365RC/actions/workflows/docker-image.yml/badge.svg)](https://github.com/ldap389/DFIR-O365RC/actions/workflows/docker-image.yml)
+[![Docker Image CI](https://github.com/ANSSI-FR/DFIR-O365RC/actions/workflows/docker-image.yml/badge.svg)](https://github.com/ANSSI-FR/DFIR-O365RC/actions/workflows/docker-image.yml)
 ---
 ## Table of contents:
 
