@@ -1,4 +1,6 @@
 ![DFIR-O365RC](./logo.png)
+
+[![Docker Image CI](https://github.com/ldap389/DFIR-O365RC/actions/workflows/docker-image.yml/badge.svg)](https://github.com/ldap389/DFIR-O365RC/actions/workflows/docker-image.yml)
 ---
 ## Table of contents:
 
@@ -46,6 +48,8 @@ Because all functions can run on *PowerShell Core*, DFIR-O365RC works also on Li
 
 ## Installation and pre-requisites <a name="install"></a>
 
+### Manual Installation.
+
 Clone the DFIR-O365RC repository. The tool works on *PowerShell Desktop* and *PowerShell Core*. 
 
 DFIR-O365 uses Jason Thompson's [MSAL.PS](https://github.com/AzureAD/MSAL.PS) and Boe Prox's [PoshRSJob](https://github.com/proxb/PoshRSJob) modules. To install them run the following commands:
@@ -80,11 +84,44 @@ Modules path examples on Linux:
 - */usr/local/share/powershell/Modules*
 - */opt/microsoft/powershell/7/Modules*
 
+On PowerShell Core, the installation of the WSMan client might also be required:
 
+```
+Install-Module PSWSMan
+Install-WSMan
+```
 The DFIR-O365RC module is installed, restart the PowerShell prompt and load the module:
 
 ```
 PS> Import-module DFIR-O365RC
+```
+
+### Use Docker to run DFIR-O365RC.
+
+Use *docker-compose* to build the image, run the container and mount a volume to retrieve logs:
+
+```
+sudo docker-compose run dfir-o365rc
+```
+
+The module is ready to use:
+
+```
+PowerShell 7.1.4
+Copyright (c) Microsoft Corporation.
+
+https://aka.ms/powershell
+Type 'help' to get help.
+
+  ____  _____ ___ ____        ___ _____  __  ____  ____   ____
+ |  _ \|  ___|_ _|  _ \      / _ \___ / / /_| ___||  _ \ / ___|
+ | | | | |_   | || |_) |____| | | ||_ \| '_ \___ \| |_) | |
+ | |_| |  _|  | ||  _ <_____| |_| |__) | (_) |__) |  _ <| |___
+ |____/|_|   |___|_| \_\     \___/____/ \___/____/|_| \_\\____|
+
+https://github.com/ANSSI-FR/DFIR-O365RC
+Loading personal and system profiles took 854ms.
+PS /mnt/host/output>
 ```
 
 ## Roles and license requirements  <a name="roleslic"></a>
@@ -99,7 +136,7 @@ In order to retrieve Azure AD [sign-ins logs](https://docs.microsoft.com/en-us/a
 
 If you need to retrieve also the Azure Activity logs you need the **Log Analytics Reader** role for the Azure subscription you are dumping the logs from.
 
-Finally if you need to collect the Azure DevOps Activity logs you need to grant the *Auditing\View audit log* permission to the user in the Azure DevOps organization you are dumping the logs from.
+Finally if you need to collect the Azure DevOps Activity logs you need to grant the **Auditing\View audit log** permission to the user in the Azure DevOps organization you are dumping the logs from.
 
  ## Functions included in the module <a name="functions"></a>
 
