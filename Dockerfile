@@ -5,7 +5,7 @@ RUN pwsh -command Install-WSMan
 RUN pwsh -command Install-Module MSAL.PS -AcceptLicense
 RUN pwsh -command Install-Module PoshRSJob
 RUN mkdir -p /root/.config/powershell
-RUN echo 'Invoke-RestMethod "https://artii.herokuapp.com/make?text=DFIR-O365RC&font=standard" -disablekeepalive' > /root/.config/powershell/Microsoft.PowerShell_profile.ps1
+RUN echo 'Write-Host -ForegroundColor Yellow "DFIR-O365RC: PowerShell module for Office 365 and Azure log collection"' > /root/.config/powershell/Microsoft.PowerShell_profile.ps1
 RUN echo 'Write-Host -ForegroundColor Yellow "https://github.com/ANSSI-FR/DFIR-O365RC"' >> /root/.config/powershell/Microsoft.PowerShell_profile.ps1
 ADD DFIR-O365RC /root/.local/share/powershell/Modules/DFIR-O365RC
 RUN pwsh -noprofile -command Import-Module DFIR-O365RC
