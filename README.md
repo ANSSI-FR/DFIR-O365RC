@@ -112,13 +112,7 @@ Copyright (c) Microsoft Corporation.
 
 https://aka.ms/powershell
 Type 'help' to get help.
-
-  ____  _____ ___ ____        ___ _____  __  ____  ____   ____
- |  _ \|  ___|_ _|  _ \      / _ \___ / / /_| ___||  _ \ / ___|
- | | | | |_   | || |_) |____| | | ||_ \| '_ \___ \| |_) | |
- | |_| |  _|  | ||  _ <_____| |_| |__) | (_) |__) |  _ <| |___
- |____/|_|   |___|_| \_\     \___/____/ \___/____/|_| \_\\____|
-
+DFIR-O365RC: PowerShell module for Office 365 and Azure log collection
 https://github.com/ANSSI-FR/DFIR-O365RC
 Loading personal and system profiles took 854ms.
 PS /mnt/host/output>
