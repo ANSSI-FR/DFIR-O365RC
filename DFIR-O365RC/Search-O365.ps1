@@ -1,4 +1,4 @@
-Function Search-O365 {
+﻿Function Search-O365 {
 
     <#
     .SYNOPSIS
@@ -79,10 +79,11 @@ Function Search-O365 {
     $sessionName = "EXO_" + [guid]::NewGuid().ToString()
     $tenant = ($token.Account.UserName).split("@")[1]
     $outputdate = "{0:yyyy-MM-dd}" -f ($datetoprocess)
+    $actualdate = $(get-date -f yyyy-MM-dd-hh-mm-ss)
     $foldertoprocess = $unifiedauditfolder + "\" + $datetoprocess
     if ((Test-Path $foldertoprocess) -eq $false){New-Item $foldertoprocess -Type Directory}
 
-    $outputfile = $foldertoprocess + "\UnifiedAuditLog_" + $tenant + "_" + $outputdate + "_" + $requesttype + ".json"
+    $outputfile = $foldertoprocess + "\UnifiedAuditLog_" + $tenant + "_" + $outputdate + "_" + $requesttype + "_" + $actualdate + ".json"
     $commandNames = "Search-UnifiedAuditLog","Search-MailboxAuditLog"
     Connect-EXOPsearchUnified -token $token -sessionName $sessionName -logfile $logfile -commandNames $commandNames
 
@@ -130,7 +131,7 @@ Function Search-O365 {
                         
                 }
 
-                $outputfile = $foldertoprocess + "\MailboxAuditLog_" + $tenant + "_" + $outputdate + "_" + $requesttype + ".json"
+                $outputfile = $foldertoprocess + "\MailboxAuditLog_" + $tenant + "_" + $outputdate + "_" + $requesttype + "_" + $actualdate + ".json"
                 if($requesttype -eq "UserIds")
                 {
                     try {

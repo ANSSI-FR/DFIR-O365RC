@@ -50,6 +50,8 @@
     "Getting all service principals"   | Write-Log -LogPath $logfile 
     $uriSP = "https://graph.microsoft.com/v1.0/servicePrincipals/"
     $ALLServicePrincipals = Get-RestAPIResponse -RESTAPIService "MSGraph" -uri $uriSP  -logfile $logfile -app $app -user $user
+    $sp_outputfile = $foldertoprocess + "\AADApps_" + $tenant + "_service_principals_raw.json"
+    $ALLServicePrincipals | ConvertTo-Json -Depth 99 |  out-file $sp_outputfile -encoding UTF8 
 
     $EnrichedSPEvents = @()
     $UniqServicePrincipals = $SPEvents | Select-Object -ExpandProperty targetResources | Group-Object -Property id
@@ -144,6 +146,9 @@
     $DelApps = Get-RestAPIResponse -RESTAPIService "MSGraph" -uri $uriDelAPPs  -logfile $logfile -app $app -user $user
     #merge existing and deleted Apps
     $ALLApps += $DelApps
+
+    $apps_outputfile = $foldertoprocess + "\AADApps_" + $tenant + "_applications_raw.json"
+    $ALLApps | ConvertTo-Json -Depth 99 |  out-file $apps_outputfile -encoding UTF8 
 
     $EnrichedAppEvents = @()
     $UniqApps = $AppEvents| Select-Object -ExpandProperty targetResources | Group-Object -Property id
