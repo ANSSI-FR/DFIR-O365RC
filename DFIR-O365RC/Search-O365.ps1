@@ -1,4 +1,4 @@
-﻿Function Search-O365 {
+Function Search-O365 {
 
     <#
     .SYNOPSIS
@@ -172,6 +172,33 @@ else
 
 
 Get-RSJob | Remove-RSJob -Force
+
+$token = Get-OAuthToken -Service EXO -silent $true -LoginHint $user -Logfile $logfile
+$app = Get-MsalClientApplication | Where-Object{$_.ClientId -eq "a0c73c16-a7e3-4564-9a95-2bdf47383716"}
+if($null -eq $app)
+{
+    "No token cache available for EXO service asking for new token" | Write-Log -LogPath $logfile -LogLevel "Warning"
+    $token = Get-OAuthToken -Service EXO -Logfile $logfile -DeviceCode $DeviceCode
+    $app = Get-MsalClientApplication | Where-Object{$_.ClientId -eq "a0c73c16-a7e3-4564-9a95-2bdf47383716"}    
+}
+
+"Checking permissions for $($user)"| Write-Log -LogPath $logfile
+$sessionName = "EXO_" + [guid]::NewGuid().ToString()
+$commandNames = "Search-UnifiedAuditLog","Search-MailboxAuditLog"
+$void = Connect-EXOPsearchUnified -token $token -sessionName $sessionName -logfile $logfile -commandNames $commandNames
+try {
+    $trysearch = Search-UnifiedAuditLog -StartDate (get-date).adddays(-90) -EndDate (get-date) -RecordType $recordtype -ResultSize 1
+
+}
+catch {
+    $errormessage = $_.Exception.Message
+    if ($errormessage -like "*The term 'Search-UnifiedAuditLog'*") {
+        "$user does not have the required permissions to get Office 365 Unified Audit Logs : doees not have the 'View-Only Audit Logs' role on https://admin.exchange.microsoft.com/. See https://learn.microsoft.com/en-us/purview/audit-log-search?view=o365-worldwide#before-you-search-the-audit-log. Cannot continue" | Write-Error  
+        "$user does not have the required permissions to get Office 365 Unified Audit Logs : doees not have the 'View-Only Audit Logs' role on https://admin.exchange.microsoft.com/. See https://learn.microsoft.com/en-us/purview/audit-log-search?view=o365-worldwide#before-you-search-the-audit-log. Cannot continue" | Write-Log -LogPath $logfile -LogLevel "Error"  
+        exit
+    }
+}
+
 
 For ($d=0; $d -le $totalloops ; $d++)
 {
