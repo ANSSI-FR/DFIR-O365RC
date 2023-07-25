@@ -50,13 +50,14 @@ Because all functions can run on *PowerShell Core*, DFIR-O365RC works also on Li
 
 ### Manual Installation.
 
-Clone the DFIR-O365RC repository. The tool works on *PowerShell Desktop* and *PowerShell Core*. 
+Clone the DFIR-O365RC repository. The tool works on *PowerShell Desktop* and *PowerShell Core*. Please note that the new `Connect-ExchangeOnline` cmdlet [requires Microsoft .NET Framework 4.7.1 or later](https://learn.microsoft.com/en-us/powershell/exchange/exchange-online-powershell-v2?view=exchange-ps#windows).
 
-DFIR-O365 uses Jason Thompson's [MSAL.PS](https://github.com/AzureAD/MSAL.PS) and Boe Prox's [PoshRSJob](https://github.com/proxb/PoshRSJob) modules. To install them run the following commands:
+DFIR-O365 uses Jason Thompson's [MSAL.PS](https://github.com/AzureAD/MSAL.PS) and Boe Prox's [PoshRSJob](https://github.com/proxb/PoshRSJob) modules as well as the [ExchangeOnlineManagement](https://www.powershellgallery.com/packages/ExchangeOnlineManagement/3.1.0) module To install them run the following commands:
 
 ```
-Install-Module -Name MSAL.PS -RequiredVersion '4.21.0.1'
+Install-Module -Name MSAL.PS -RequiredVersion '4.37.0.0'
 Install-Module -Name PoshRSJob -RequiredVersion '1.7.4.4'
+Install-Module -Name ExchangeOnlineManagement -RequiredVersion '3.1.0'
 ```
 
 If [MSAL.PS](https://github.com/AzureAD/MSAL.PS) module installation fails with the following message:

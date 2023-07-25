@@ -1,4 +1,4 @@
-﻿Function Write-Log {
+Function Write-Log {
 
     Param 
     ( 
@@ -279,15 +279,11 @@ param (
 
 
 $UserId = ($token.Account.Username).tostring()
-$Authorization = "Bearer {0}" -f $Token.AccessToken
-$Password = ConvertTo-SecureString -AsPlainText $Authorization -Force
-$Credtoken = New-Object System.Management.Automation.PSCredential -ArgumentList $UserId, $Password
     $Stoploop = $false
     [int]$Retrycount = "0"
     do {
         try {
-        $Session = New-PSSession -Name $sessionName -ConfigurationName Microsoft.Exchange -ConnectionUri 'https://outlook.office365.com/PowerShell-LiveId?BasicAuthToOAuthConversion=true' -Credential $Credtoken -Authentication Basic -AllowRedirection -ErrorAction Stop
-        Import-Module (Import-PSSession $Session -AllowClobber -CommandName $commandNames -ErrorAction Stop) -Global -WarningAction 'SilentlyContinue' 
+        Connect-ExchangeOnline -AccessToken $token.AccessToken -UserPrincipalName $UserId -CommandName $commandNames -ErrorAction Stop
         "EXO session $($sessionName) successfully created" | Write-Log -LogPath $logfile                           
         $Stoploop = $true
             }

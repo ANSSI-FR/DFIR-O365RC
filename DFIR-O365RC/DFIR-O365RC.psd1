@@ -34,7 +34,8 @@ PowerShellVersion = '5.0'
 # Modules that must be imported into the global environment prior to importing this module
 RequiredModules = @(
     @{ModuleName = 'PoshRSJob'; ModuleVersion = '1.7.4.4'; },
-    @{ModuleName = 'MSAL.PS'; ModuleVersion = '4.21.0.1'; }
+    @{ModuleName = 'MSAL.PS'; ModuleVersion = '4.37.0.0'; }
+    @{ModuleName = 'ExchangeOnlineManagement'; ModuleVersion = '3.1.0'; }
     )
 
 
