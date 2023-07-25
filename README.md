@@ -125,7 +125,7 @@ PS /mnt/host/output>
 The user launching the tool should have the following roles:
 
  - Microsoft 365 role (portal.microsoft.com): **Global reader**
- - Exchange Online role (outlook.office365.com/ecp): **View-Only Audit Logs**
+ - Exchange Online role (admin.exchange.microsoft.com): **View-Only Audit Logs**
 
 In order to retrieve Azure AD [sign-ins logs](https://docs.microsoft.com/en-us/azure/active-directory/reports-monitoring/concept-sign-ins) with the *MS Graph API* you need at least one user with an [Azure AD Premium P1](https://azure.microsoft.com/en-us/pricing/details/active-directory/) license. This license can be purchased at additional cost for a single user and is sometimes included in some license plans such as the *Microsoft 365 Business Premium* for small and medium-sized businesses.
 

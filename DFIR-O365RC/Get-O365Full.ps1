@@ -1,4 +1,4 @@
-﻿
+
 Function Get-O365Full {
 
     <#
@@ -132,7 +132,7 @@ Function Get-O365Full {
             $tenant = ($token.Account.UserName).split("@")[1]
             $outputfile = $foldertoprocess + "\UnifiedAuditLog_" + $tenant + "_" + $outputdate + ".json"
             $token = Get-MsalToken -Silent -PublicClientApplication $app -LoginHint $user -Scopes "https://outlook.office365.com/.default"
-            "Refreshing token - valid till" + $token.ExpiresOn.LocalDateTime.Tostring() | Write-Log -LogPath $logfile
+            "Refreshing token - valid till " + $token.ExpiresOn.LocalDateTime.Tostring() | Write-Log -LogPath $logfile
             Foreach ($recordtype in $RecordTypes)
             {    
             try {

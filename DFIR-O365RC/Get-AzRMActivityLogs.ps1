@@ -62,7 +62,7 @@ $azsubscriptionsinfo = Invoke-RestMethod -Headers @{Authorization = "Bearer $($t
 $nbsubscriptions = ($azsubscriptionsinfo.value | Measure-Object).count
 if($nbsubscriptions -eq 0)
 {
-    Write-Host "No Azure subscription to process, existing" 
+    Write-Host "No Azure subscription to process, exiting" 
     "The tenant has $($nbsubscriptions) subscription, exiting"  | Write-Log -LogPath $logfile  -Level "ERROR"
     exit
 }
