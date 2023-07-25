@@ -42,18 +42,6 @@ Function Get-AADLogs {
     else
         {"Processing signins logs only"  | Write-Log -LogPath $logfile}
  
-   
-$totaltimespan = (New-TimeSpan -Start $StartDate -End $Enddate)
-
-if(($totaltimespan.hours -eq 0) -and ($totaltimespan.minutes -eq 0) -and ($totaltimespan.seconds -eq 0))
-    {$totaldays = $totaltimespan.days
-    $totalloops = $totaldays
-    }
-else
-    {$totaldays = $totaltimespan.days + 1
-    $totalloops = $totaltimespan.days
-    }
-
     Get-RSJob | Remove-RSJob -Force
 #Test the directory size
 $tenant = ($user).split("@")[1]
@@ -88,10 +76,72 @@ else {
 "Dumping tenant information in azure_ad_tenant folder"  | Write-Log -LogPath $logfile   
 $tenantinfo.value | ConvertTo-Json -Depth 99 |  out-file $outputfile -encoding UTF8 
 
+#Refresh token
+$token = Get-OAuthToken -Service MSGraph -silent $true -LoginHint $user -Logfile $logfile
+$app = Get-MsalClientApplication | Where-Object{$_.ClientId -eq "1b730954-1685-4b74-9bfd-dac224a7b894"}
+if($null -eq $app)
+{
+    "No token cache available for MSGraph service asking for new token" | Write-Log -LogPath $logfile -LogLevel "Warning"
+    $token = Get-OAuthToken -Service MSGraph -silent $true -Logfile $logfile -DeviceCode $DeviceCode
+    $app = Get-MsalClientApplication | Where-Object{$_.ClientId -eq "1b730954-1685-4b74-9bfd-dac224a7b894"}    
+}
+
+# Check if Azure P1 is enabled
+"Checking permissions for $($user)"| Write-Log -LogPath $logfile
+$token = Get-MsalToken -Silent -PublicClientApplication $app -LoginHint $user -Scopes "https://graph.microsoft.com/.default"
+$uri = "https://graph.microsoft.com/v1.0/auditLogs/signIns?`$top=1"
+$P1Enabled = $true
+try {    
+    $void = Invoke-WebRequest -Headers @{Authorization = "Bearer $($token.AccessToken)"} -Uri $Uri -Method Get -ContentType "application/json" -ErrorAction Stop
+    }
+catch {
+    if ($psversiontable.psversion.major -lt 6) {
+        $result = $_.Exception.Response.GetResponseStream()
+        $reader = New-Object System.IO.StreamReader($result)
+        $reader.BaseStream.Position = 0
+        $reader.DiscardBufferedData()
+        $errormessage = $reader.ReadToEnd();
+    }
+
+    else {
+        $errormessage = $_.ErrorDetails.Message
+    }
+
+    if($errormessage -like "*RequestFromNonPremiumTenant*")
+        {
+        $P1Enabled = $false
+        "Azure AD P1 not enabled on tenant, enable it if you wish to retrieve signin logs via MSGraph but be aware of additional costs" | Write-Error
+        "Azure AD P1 not enabled on tenant, enable it if you wish to retrieve signin logs via MSGraph but be aware of additional costs" | Write-Log -LogPath $logfile -LogLevel "Error"
+        if ($StartDate -lt (get-date).adddays(-7)) {
+            "Azure AD P1 not enabled on tenant, reducing to logs from the last 7 days" | Write-Log -LogPath $logfile -LogLevel "Error"
+            $StartDate = [DateTime](get-date).adddays(-7).ToString("yyyy-MM-dd")
+            if ($EndDate -lt $StartDate) {
+                "Azure AD P1 not enabled on tenant, can't dump logs for that period" | Write-Log -LogPath $logfile -LogLevel "Error"
+                exit
+            }
+            }
+        }
+    elseif($errormessage -like "*RequestFromUnsupportedUserRole*")
+        {
+            "$user does not have the required permissions to get Azure AD Audit Logs : not in the 'Global Reader' group on https://portal.azure.com. Cannot continue" | Write-Error
+            "$user does not have the required permissions to get Azure AD Audit Logs : not in the 'Global Reader' group on https://portal.azure.com. Cannot continue" | Write-Log -LogPath $logfile -LogLevel "Error"
+            exit
+        }
+}
+
+$totaltimespan = (New-TimeSpan -Start $StartDate -End $Enddate)
+if(($totaltimespan.hours -eq 0) -and ($totaltimespan.minutes -eq 0) -and ($totaltimespan.seconds -eq 0))
+    {$totaldays = $totaltimespan.days
+    $totalloops = $totaldays
+    }
+else
+    {$totaldays = $totaltimespan.days + 1
+    $totalloops = $totaltimespan.days
+    }
 
     $Launchsearch =
     {
-    Param($app, $user, $newstartdate, $newenddate ,$currentpath,$tenantsize,$Dumplogs)
+    Param($app, $user, $newstartdate, $newenddate ,$currentpath,$tenantsize,$Dumplogs,$P1Enabled)
     $datetoprocess = ($newstartdate.ToString("yyyy-MM-dd"))
     $logfile = $currentpath + "\AAD" + $datetoprocess + ".log"
     $aadauditfolder = $currentpath + "\azure_ad_audit"
@@ -120,22 +170,8 @@ $tenantinfo.value | ConvertTo-Json -Depth 99 |  out-file $outputfile -encoding U
         }
     #Get AAD Signin logs 
     if(($Dumplogs -eq "All") -or ($Dumplogs -eq "SigninOnly"))
-        {
-        # Check if Azure P1 is enabled
-        $token = Get-MsalToken -Silent -PublicClientApplication $app -LoginHint $user -Scopes "https://graph.microsoft.com/.default"
-        $uri = "https://graph.microsoft.com/v1.0/auditLogs/signIns?`$top=1"
-        $P1Enabled = $true
-        try {    
-            Invoke-RestMethod -Headers @{Authorization = "Bearer $($token.AccessToken)"} -Uri $Uri -Method Get -ContentType "application/json" -ErrorAction Stop
-            }
-        catch {
-            if($error[0] -like "*RequestFromNonPremiumTenant*")
-                {
-                $P1Enabled = $false
-                "Azure AD P1 not enabled on tenant, enable it if you wish to retrieve signin logs via MSGraph but be aware of additional costs" | Write-Log -LogPath $logfile -LogLevel "Warning"  
-                }
-            }
-            if($P1Enabled -eq $true)
+    {
+        if($P1Enabled -eq $true)
             {
             $totalhours = [Math]::Floor((New-TimeSpan -Start $newstartdate -End $newenddate).Totalhours) 
             if($totalhours -eq 24){$totalhours--}
@@ -216,7 +252,7 @@ $tenantinfo.value | ConvertTo-Json -Depth 99 |  out-file $outputfile -encoding U
     "Lauching job number $($d) with startdate {0:yyyy-MM-dd} {0:HH:mm:ss} and enddate {1:yyyy-MM-dd} {1:HH:mm:ss}" -f ($newstartdate,$newenddate) | Write-Log -LogPath $logfile
     $datetoprocess = ($newstartdate.ToString("yyyy-MM-dd"))
     $jobname = "AAD" + $datetoprocess
-    Start-RSJob -Name $jobname  -ScriptBlock $Launchsearch -FunctionsToImport  write-log, Get-RestAPIResponse -ArgumentList $app, $user, $newstartdate, $newenddate, $currentpath, $tenantsize, $Dumplogs
+    Start-RSJob -Name $jobname  -ScriptBlock $Launchsearch -FunctionsToImport  write-log, Get-RestAPIResponse -ArgumentList $app, $user, $newstartdate, $newenddate, $currentpath, $tenantsize, $Dumplogs, $P1Enabled
 
     $nbjobrunning = (Get-RSJob | where-object {$_.State -eq "running"}  | Measure-Object).count
     while($nbjobrunning -ge 3)
