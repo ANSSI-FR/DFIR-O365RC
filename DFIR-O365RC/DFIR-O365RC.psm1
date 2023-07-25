@@ -1,4 +1,4 @@
-Function Write-Log {
+﻿Function Write-Log {
 
     Param 
     ( 
@@ -193,15 +193,25 @@ Function Get-RestAPIResponse {
         $Stoploop = $true
             }
         catch {
-            if ($Retrycount -gt 3){
-                "Failed to dump from $($RESTAPIService) uri $($uri) records 3 times - aborting" | Write-Log -LogPath $logfile -LogLevel "Error"
+            if ($Retrycount -gt 9){
+                "Failed to dump from $($RESTAPIService) uri $($uri) records $($Retrycount) times - aborting" | Write-Log -LogPath $logfile -LogLevel "Error"
                 $Data = @()  
                 $Stoploop = $true
                 }
             else {
-                $errormessage = $_.Exception.Message
-                "Failed to dump from $($RESTAPIService) uri $($uri) - sleeping and retrying  - $($errormessage)" | Write-Log -LogPath $logfile -LogLevel "Warning"   
-                Start-Sleep -Seconds 1
+                $errorcode = $_.Exception.Response.StatusCode.value__
+                $errormessage = $_.ErrorDetails.Message
+                "Failed to dump from $($RESTAPIService) uri $($uri) - sleeping and retrying  - $($errorcode) : $($errormessage)" | Write-Log -LogPath $logfile -LogLevel "Warning"
+                
+                If ($errorcode -eq "429") {
+                    Start-Sleep -Seconds (5 * ($Retrycount + 1))
+                }
+                Elseif ($errorcode -eq "403") {
+                    $Retrycount = 9
+                }
+                Else {
+                    Start-Sleep -Seconds 1
+                }
                 $Retrycount = $Retrycount + 1
                 }
             }
@@ -277,8 +287,8 @@ param (
         [array]$commandNames = "Search-UnifiedAuditLog"
     )
 
-
-$UserId = ($token.Account.Username).tostring()
+    
+    $UserId = ($token.Account.Username).tostring()
     $Stoploop = $false
     [int]$Retrycount = "0"
     do {
@@ -289,35 +299,20 @@ $UserId = ($token.Account.Username).tostring()
             }
         catch {
             if ($Retrycount -gt 3){
-                "Failed to create EXO session $($sessionName) 4 times - aborting" | Write-Log -LogPath $logfile -LogLevel "Error"  
+                "Failed to create EXO session $($sessionName) $($Retrycount) times - aborting" | Write-Log -LogPath $logfile -LogLevel "Error"  
                 $Stoploop = $true
                 }
-            elseif ($Retrycount -eq 3)
+            else
                 {
                 $errormessage = $_.Exception.Message
-                "Failed to create EXO session $($sessionName) - sleeping and retrying  - $($errormessage)" | Write-Log -LogPath $logfile -LogLevel "Warning"     
-                Start-Sleep -Seconds 180
-                $Retrycount = $Retrycount + 1                  
+                "Failed to create EXO session $($sessionName) - sleeping and retrying  - $($errormessage)" | Write-Log -LogPath $logfile -LogLevel "Warning"   
+                if ($errormessage -like "*No cmdlet assigned to the user have this feature enabled.*") {
+                    $Retrycount = 3
                 }
-            elseif ($Retrycount -eq 2)
-                {
-                $errormessage = $_.Exception.Message
-                "Failed to create EXO session $($sessionName) - sleeping and retrying  - $($errormessage)" | Write-Log -LogPath $logfile -LogLevel "Warning"     
-                Start-Sleep -Seconds 120
-                $Retrycount = $Retrycount + 1                  
+                else {  
+                    Start-Sleep -Seconds (60 * ($Retrycount + 1))
                 }
-                elseif ($Retrycount -eq 1)
-                {
-                $errormessage = $_.Exception.Message
-                "Failed to create EXO session $($sessionName) - sleeping and retrying  - $($errormessage)" | Write-Log -LogPath $logfile -LogLevel "Warning"    
-                Start-Sleep -Seconds 60
                 $Retrycount = $Retrycount + 1                  
-                }
-            else {
-                $errormessage = $_.Exception.Message
-                "Failed to create EXO session $($sessionName) - sleeping and retrying - $($errormessage)" | Write-Log -LogPath $logfile -LogLevel "Warning"
-                Start-Sleep -Seconds 5
-                $Retrycount = $Retrycount + 1
                 }
             }
         }
