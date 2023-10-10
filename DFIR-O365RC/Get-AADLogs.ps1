@@ -10,7 +10,7 @@ Function Get-AADLogs {
     PS C:\>$enddate = get-date
     PS C:\>$startdate = $enddate.adddays(-30)
 
-    PS C:\>Get-AADLogs -stardate $startdate -enddate $enddate 
+    PS C:\>Get-AADLogs -startdate $startdate -enddate $enddate
 
     Dump all Azure AD logs available
     #>

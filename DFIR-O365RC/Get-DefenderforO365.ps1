@@ -8,7 +8,7 @@
     PS C:\>$enddate = get-date
     PS C:\>$startdate = $enddate.adddays(-90)
 
-    PS C:\>Get-DefenderforO365 -stardate $startdate -enddate $enddate 
+    PS C:\>Get-DefenderforO365 -startdate $startdate -enddate $enddate
 
     Dump all Microsoft Defender for O365 logs
     #>

@@ -9,7 +9,7 @@
     PS C:\>$enddate = get-date
     PS C:\>$startdate = $enddate.adddays(-30)
 
-    PS C:\>Get-AADDevices -stardate $startdate -enddate $enddate 
+    PS C:\>Get-AADDevices -startdate $startdate -enddate $enddate
 
     Dump all Azure AD devices related events.
 

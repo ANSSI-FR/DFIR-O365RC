@@ -10,16 +10,16 @@ Function Get-O365Full {
     PS C:\>$enddate = get-date
     PS C:\>$startdate = $enddate.adddays(-7)
 
-    PS C:\>Get-O365Full -stardate $startdate -enddate $enddate -RecordSet "All"
+    PS C:\>Get-O365Full -startdate $startdate -enddate $enddate -RecordSet "All"
 
     Dump all unified audit logs since last week
     .EXAMPLE 
     
-    Get-O365Full -stardate $startdate -enddate $enddate -RecordSet "ExchangeOnly" -logfile "UnifiedExchangeRecords.log"
+    Get-O365Full -startdate $startdate -enddate $enddate -RecordSet "ExchangeOnly" -logfile "UnifiedExchangeRecords.log"
     Dump Exchange only records set since last week and write log to UnifiedExchangeRecords.log
     .EXAMPLE 
     
-    Get-O365Full -stardate $startdate -enddate $enddate -RecordTypes "Yammer" -logfile "UnifiedYammerOnly.log"
+    Get-O365Full -startdate $startdate -enddate $enddate -RecordTypes "Yammer" -logfile "UnifiedYammerOnly.log"
     Dump Yammer records since last week and write log to UnifiedYammerOnly.log
     #>
     

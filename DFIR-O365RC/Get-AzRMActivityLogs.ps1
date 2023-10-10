@@ -10,12 +10,12 @@ Function Get-AzRMActivityLogs {
     PS C:\>$enddate = get-date
     PS C:\>$startdate = $enddate.adddays(-30)
 
-    PS C:\>Get-AzRMActivityLogs -stardate $startdate -enddate $enddate 
+    PS C:\>Get-AzRMActivityLogs -startdate $startdate -enddate $enddate
 
     Dump all Azure activity logs available for the tenant
     .EXAMPLE 
     
-    Get-AzRMActivityLogs -stardate $startdate -enddate $enddate -SelectSubscription:$true
+    Get-AzRMActivityLogs -startdate $startdate -enddate $enddate -SelectSubscription:$true
     Dump Azure activity logs for a given subscription in the tenant
     #>
     

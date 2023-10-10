@@ -10,12 +10,12 @@ Function Get-AzDevOpsActivityLogs {
     PS C:\>$enddate = get-date
     PS C:\>$startdate = $enddate.adddays(-30)
 
-    PS C:\>Get-AzDevOpsActivityLogs -stardate $startdate -enddate $enddate 
+    PS C:\>Get-AzDevOpsActivityLogs -startdate $startdate -enddate $enddate
 
     Dump all Azure DevOps activity logs available the user has access to
     .EXAMPLE 
     
-    Get-AzDevOpsActivityLogs -stardate $startdate -enddate $enddate -SelectOrg:$true
+    Get-AzDevOpsActivityLogs -startdate $startdate -enddate $enddate -SelectOrg:$true
     Dump Azure DevOps activity logs for a given organization
     #>
     

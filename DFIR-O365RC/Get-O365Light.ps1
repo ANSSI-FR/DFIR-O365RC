@@ -8,11 +8,11 @@
     PS C:\>$enddate = get-date
     PS C:\>$startdate = $enddate.adddays(-90)
 
-    PS C:\>Get-O365Light -stardate $startdate -enddate $enddate 
+    PS C:\>Get-O365Light -startdate $startdate -enddate $enddate
 
     Dump all unified audit logs from the defined subset
     .EXAMPLE
-    Get-O365Light -stardate $startdate -enddate $enddate -RecordSet "AzureADOnly" -logfile "UnifiedAzureADOnly.log"
+    Get-O365Light -startdate $startdate -enddate $enddate -RecordSet "AzureADOnly" -logfile "UnifiedAzureADOnly.log"
     Dump AzureAD only operations since last week from the defined subset  and write log to UnifiedAzureADOnly.log
     #>
     

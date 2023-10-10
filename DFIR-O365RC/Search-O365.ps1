@@ -8,12 +8,12 @@
     PS C:\>$enddate = get-date
     PS C:\>$startdate = $enddate.adddays(-90)
 
-    PS C:\>Search-O365 -stardate $startdate -enddate $enddate -Freetext "Python" 
+    PS C:\>Search-O365 -startdate $startdate -enddate $enddate -Freetext "Python"
 
     Search for Python user agent in unified audit logs
 
     .EXAMPLE
-    Search-O365 -stardate $startdate -enddate $enddate -IPAddresses X.X.X.X
+    Search-O365 -startdate $startdate -enddate $enddate -IPAddresses X.X.X.X
     Dump all the unified audit logs entries by the specified IP addresses. You specify multiple IP addresses separated by commas.
     #>
     

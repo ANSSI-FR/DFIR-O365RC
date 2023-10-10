@@ -9,7 +9,7 @@
     PS C:\>$enddate = get-date
     PS C:\>$startdate = $enddate.adddays(-30)
 
-    PS C:\>Get-AADApps -stardate $startdate -enddate $enddate 
+    PS C:\>Get-AADApps -startdate $startdate -enddate $enddate
 
     Dump all Azure AD applications and Service Principals related events.
 
