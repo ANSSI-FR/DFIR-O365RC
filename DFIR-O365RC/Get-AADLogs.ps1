@@ -254,8 +254,13 @@ else
     $jobname = "AAD" + $datetoprocess
     Start-RSJob -Name $jobname  -ScriptBlock $Launchsearch -FunctionsToImport  write-log, Get-RestAPIResponse -ArgumentList $app, $user, $newstartdate, $newenddate, $currentpath, $tenantsize, $Dumplogs, $P1Enabled
 
+    $maxjobrunning = 3
+    if($tenantsize -eq "huge"){
+        $maxjobrunning = 1
+    }
+
     $nbjobrunning = (Get-RSJob | where-object {$_.State -eq "running"}  | Measure-Object).count
-    while($nbjobrunning -ge 3)
+    while($nbjobrunning -ge $maxjobrunning)
             {
             start-sleep -seconds 2
             $nbjobrunning = (Get-RSJob | where-object {$_.State -eq "running"}  | Measure-Object).count
