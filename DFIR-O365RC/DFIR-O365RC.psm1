@@ -242,15 +242,15 @@ Function Get-RestAPIResponse {
                     $Stoploop = $true
                      }
                 catch {
-                    if ($Retrycount -gt 3){
-                        "Failed to dump from $($RESTAPIService) uri $($uri) records 3 times - aborting" | Write-Log -LogPath $logfile -LogLevel "Error"
+                    if ($Retrycount -gt 9){
+                        "Failed to dump from $($RESTAPIService) uri $($uri) records 9 times - aborting" | Write-Log -LogPath $logfile -LogLevel "Error"
                          $Data = @()  
                          $Stoploop = $true
                     }
                      else {
                         $errormessage = $_.Exception.Message
                         "Failed to dump from $($RESTAPIService) uri $($uri) - sleeping and retrying  - $($errormessage)" | Write-Log -LogPath $logfile -LogLevel "Warning"   
-                        Start-Sleep -Seconds 1
+                        Start-Sleep -Seconds (5 * ($Retrycount + 1))
                         if($token.ExpiresOn -le (get-date))
                             {
                             "Token has expired renewing $($RESTAPIService) token" | Write-Log -LogPath $logfile -LogLevel "Warning"  
@@ -400,7 +400,7 @@ Function Get-LargeUnifiedAuditLog {
                 else {
                     $errormessage = $_.Exception.Message
                     "Failed to dump $($recordtype) records - sleeping and retrying  - $($errormessage)" | Write-Log -LogPath $logfile -LogLevel "Warning"   
-                    Start-Sleep -Seconds 1
+                    Start-Sleep -Seconds (60 * ($Retrycount + 1))
                     $Retrycount = $Retrycount + 1
                     }
                 }
