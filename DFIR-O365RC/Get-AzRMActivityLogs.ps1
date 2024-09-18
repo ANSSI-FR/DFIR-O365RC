@@ -1,268 +1,247 @@
 
-Function Get-AzRMActivityLogs {
+function Get-AzRMActivityLogs {
 
     <#
     .SYNOPSIS
-    The Get-AzRMActivityLogs function dumps in JSON files Azure activity logs for a specific time range.
+    The Get-AzRMActivityLogs function dumps in JSON files Azure Resource Manager activity logs for a specific time range.
 
     .EXAMPLE
-    
-    PS C:\>$enddate = get-date
-    PS C:\>$startdate = $enddate.adddays(-30)
 
-    PS C:\>Get-AzRMActivityLogs -startdate $startdate -enddate $enddate
+    PS C:\>$appId = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+    PS C:\>$tenant = "example.onmicrosoft.com"
+    PS C:\>$certificatePath = "./example.pfx"
+    PS C:\>$endDate = Get-Date
+    PS C:\>$startDate = $endDate.AddDays(-90)
 
-    Dump all Azure activity logs available for the tenant
-    .EXAMPLE 
-    
-    Get-AzRMActivityLogs -startdate $startdate -enddate $enddate -SelectSubscription:$true
-    Dump Azure activity logs for a given subscription in the tenant
+    PS C:\>Get-AzRMActivityLogs -startDate $startDate -endDate $endDate -appId $appId -tenant $tenant -certificatePath $certificatePath
+
+    Dump all Azure Resource Manager activity logs for the last 90 days.
     #>
-    
+
     param (
         [Parameter(Mandatory = $true)]
-        [DateTime]$Enddate,
+        [DateTime]$startDate,
         [Parameter(Mandatory = $true)]
-        [DateTime]$StartDate,
+        [DateTime]$endDate,
+        [Parameter(Mandatory = $true)]
+        [String]$certificatePath,
+        [Parameter(Mandatory = $true)]
+        [String]$appId,
+        [Parameter(Mandatory = $true)]
+        [String]$tenant,
         [Parameter(Mandatory = $false)]
-        [boolean]$SelectSubscription=$false,
-        [Parameter(Mandatory = $false)]
-        [boolean]$DeviceCode=$false,
-        [Parameter(Mandatory = $false)]
-        [String]$logfile = "Get-AzRMActivityLogs.log"
+        [String]$logFile = "Get-AzRMActivityLogs.log"
     )
-    $currentpath = (get-location).path
-    $logfile = $currentpath + "\" +  $logfile
-    "Getting AzRM Oauth token"  | Write-Log -LogPath $logfile
-    Clear-MsalTokenCache
-    $token = Get-OAuthToken -Service AzRM -Logfile $logfile -DeviceCode $DeviceCode
-    $user = $token.Account.UserName
+    $currentPath = (Get-Location).path
 
-   
-$totaltimespan = (New-TimeSpan -Start $StartDate -End $Enddate)
+    $null, $needPassword, $certificateSecurePassword = Import-Certificate -certificatePath $certificatePath -logFile $logFile
 
-if(($totaltimespan.hours -eq 0) -and ($totaltimespan.minutes -eq 0) -and ($totaltimespan.seconds -eq 0))
-    {$totaldays = $totaltimespan.days
-    $totalloops = $totaldays
-    }
-else
-    {$totaldays = $totaltimespan.days + 1
-    $totalloops = $totaltimespan.days
+    Connect-AzApplication -logFile $logFile -certificatePath $certificatePath -certificateSecurePassword $certificateSecurePassword -needPassword $needPassword -tenant $tenant -appId $appId
+
+    $azureSubscriptionsFolder = $currentPath + "\azure_rm_subscriptions"
+
+    if ((Test-Path $azureSubscriptionsFolder) -eq $false){
+        New-Item $azureSubscriptionsFolder -Type Directory | Out-Null
     }
 
-Get-RSJob | Remove-RSJob -Force
-
-$tenant = ($user).split("@")[1]
-$azsubscriptionsfolder = $currentpath + "\azure_rm_subscriptions"
-if ((Test-Path $azsubscriptionsfolder) -eq $false){New-Item $azsubscriptionsfolder -Type Directory | Out-Null}
-$outputfile = $azsubscriptionsfolder + "\AzRMsubscriptions_" + $tenant + ".json"
-$uri = "https://management.azure.com/Subscriptions?api-version=2016-06-01"
-$azsubscriptionsinfo = Invoke-RestMethod -Headers @{Authorization = "Bearer $($token.AccessToken)"} -Uri $Uri -Method Get -ContentType "application/json" -ErrorAction Stop
-
-$nbsubscriptions = ($azsubscriptionsinfo.value | Measure-Object).count
-if($nbsubscriptions -eq 0)
-{
-    Write-Host "No Azure subscription to process, exiting" 
-    "The tenant has $($nbsubscriptions) subscription, exiting"  | Write-Log -LogPath $logfile  -Level "ERROR"
-    exit
-}
-else
-    {
-    Write-Host "The tenant has $($nbsubscriptions) subscriptions:" 
-    "The tenant has $($nbsubscriptions) subscriptions"  | Write-Log -LogPath $logfile
-    $azsubscriptionsinfo.value | ForEach-Object{write-host "$($_.displayName) | $($_.subscriptionId)"}  
-    }
-if($SelectSubscription -eq $false)
-    {
-        Write-Host "Processing activity logs for all subscriptions." 
-        "Processing activity logs for all subscriptions, dumping all subscriptions information to $($outputfile) "  | Write-Log -LogPath $logfile   
-        $subidtoprocess = $azsubscriptionsinfo.value
-    }
-else
-    {
-        Write-Host "Please enter a subscription ID:"
-        $subid = read-host
-        $subidtoprocess = $azsubscriptionsinfo.value | Where-Object{$_.subscriptionId -eq $subid}
-        if($subidtoprocess)
-            {
-                Write-Host "Processing activity logs only for $($subidtoprocess.displayName) subscription." 
-                "Processing activity logs only for $($subidtoprocess.displayName) subscription, dumping all subscriptions information to $($outputfile) "  | Write-Log -LogPath $logfile     
+    $subscriptionsRaw = Get-AzSubscription -ErrorAction Stop
+    $subscriptionsNameAndId =  $subscriptionsRaw | Select-Object Name, Id
+    Write-Host "This application has access to the following subscriptions:"
+    "This application has access to the following subscriptions:" | Write-Log -LogPath $logFile
+    $subscriptionsNameAndId | Out-Host
+    $subscriptionsNameAndId | Write-Log -LogPath $logFile
+    $choice = Read-Host "Do you want to collect Azure Resource Manager activity logs for all [a], specific [s] or no [N] subscription ? [a/s/N]"
+    if ($choice.ToUpper() -eq "S"){
+        [System.Collections.ArrayList]$wantedSubscriptionsNameAndId = @{}
+        $read = $True
+        Write-Host "Leave Blank and press 'Enter' to Stop"
+        while ($read){
+            $potentialSubscriptionId = Read-Host "Please enter the subscription IDs, one by one, and press 'Enter'"
+            if ($potentialSubscriptionId){
+                $selectedInput = $subscriptionsNameAndId | Where-Object {$_.Id -eq $potentialSubscriptionId}
+                if ($null -ne $selectedInput){
+                    $wantedSubscriptionsNameAndId.Add($selectedInput) | Out-Null
+                    Write-Host "Added $potentialSubscriptionId"
+                }
+                else {
+                    Write-Warning "Invalid subscription ID, please try again"
+                }
             }
-        else{
-            Write-Host "Subscription ID is incorrect, exiting" 
-            "Subscription ID is incorrect, exiting"  | Write-Log -LogPath $logfile -Level "ERROR"
-            exit
-        }
-    }
-
-$azsubscriptionsinfo.value | ConvertTo-Json -Depth 99 |  out-file $outputfile -encoding UTF8 
-
-
-    $Launchsearch =
-    {
-    Param($app, $user, $newstartdate, $newenddate ,$currentpath,$subscriptionID)
-   
-    $datetoprocess = ($newstartdate.ToString("yyyy-MM-dd"))
-    $logfile = $currentpath + "\AzRM_" + $subscriptionID + "_" + $datetoprocess + ".log"
-    $tenant = ($user).split("@")[1]
-
-    $azRMActivityfolder = $currentpath + "\azure_rm_activity"
-    if ((Test-Path $azRMActivityfolder) -eq $false){New-Item $azRMActivityfolder -Type Directory}
-    
-    $totalhours = [Math]::Floor((New-TimeSpan -Start $newstartdate -End $newenddate).Totalhours) 
-    if($totalhours -eq 24){$totalhours--}
-    
-    For ($h=0; $h -le $totalhours ; $h++)
-        {
-        if($h -eq 0)
-            {
-            $newstarthour = $newstartdate
-            $newendhour = $newstartdate.AddMinutes(59 - $newstartdate.Minute).AddSeconds(60 - $newstartdate.Second)    
-            }
-        elseif($h -eq $totalhours)
-            {
-            $newstarthour = $newendhour
-            $newendhour = $newenddate
-            }
-        else {
-            $newstarthour = $newendhour
-            $newendhour = $newstarthour.addHours(1)   
-            }
-        "Processing Azure activity logs between {0:yyyy-MM-dd} {0:HH:mm:ss} and {1:yyyy-MM-dd} {1:HH:mm:ss}" -f ($newstarthour,$newendhour)  | Write-Log -LogPath $logfile  
-
-        $outputdate = "{0:yyyy-MM-dd}_{0:HH-00-00}" -f ($newstarthour)
-        $Auditstart = "{0:s}" -f $newstarthour + "Z"
-        $Auditend  = "{0:s}" -f $newendhour + "Z"
-
-
-        $uri =  "https://management.azure.com/subscriptions/$($subscriptionID)/providers/microsoft.insights/eventtypes/management/values?api-version=2015-04-01&`$filter=eventTimestamp ge $($Auditstart) and eventTimestamp le $($AuditEnd)"
-        $AzRMactivityEvents = Get-RestAPIResponse -RESTAPIService "AzRM" -uri $uri  -logfile $logfile -app $app -user $user
-        $foldertoprocess = $azRMActivityfolder + "\" + $datetoprocess
-        if ((Test-Path $foldertoprocess) -eq $false){New-Item $foldertoprocess -Type Directory}
-        $outputfile = $foldertoprocess + "\AzRM_" + $tenant + "_" + $subscriptionID + "_" + $outputdate + ".json"
-        if($AzRMactivityEvents)
-            {
-            $nbAzRMactivityEvents = ($AzRMactivityEvents | Measure-Object).count
-            "Dumping $($nbAzRMactivityEvents) Azure activity logs events to $($outputfile)"   | Write-Log -LogPath $logfile
-            $AzRMactivityEvents | ConvertTo-Json -Depth 99 |  out-file $outputfile -encoding UTF8 
-            }
-        else {
-            "No Azure activity logs event to dump to $($outputfile)"   | Write-Log -LogPath $logfile -LogLevel "Warning" 
-            }    
-        }
-    }
-
-foreach($sub in $subidtoprocess)
-{
-    Write-Host "Starting processing activity logs for $($sub.displayName) subscription." 
-    "Starting processing activity logs for $($sub.displayName) subscription."  | Write-Log -LogPath $logfile 
-
-    For ($d=0; $d -le $totalloops ; $d++)
-    {
-        if($d -eq 0)
-            {
-            $newstartdate = $StartDate
-            $newenddate = get-date("{0:yyyy-MM-dd} 00:00:00.000" -f ($newstartdate.AddDays(1)))
-            }
-        elseif($d -eq $totaldays)
-            {
-            $newenddate = $Enddate   
-            $newstartdate = get-date("{0:yyyy-MM-dd} 00:00:00.000" -f ($newenddate))
-            }
-        else {
-            $newstartdate = $newenddate
-            $newenddate = $newenddate.AddDays(+1)
-            }
-    #Refresh token
-    $token = Get-OAuthToken -Service AzRM -silent $true -LoginHint $user -Logfile $logfile
-    $app = Get-MsalClientApplication | Where-Object{$_.ClientId -eq "1950a258-227b-4e31-a9cf-717495945fc2"}
-    if($null -eq $app)
-    {
-        "No token cache available for AzRM service asking for new token" | Write-Log -LogPath $logfile -LogLevel "Warning"
-        $token = Get-OAuthToken -Service AzRM -Logfile $logfile -DeviceCode $DeviceCode
-        $app = Get-MsalClientApplication | Where-Object{$_.ClientId -eq "1950a258-227b-4e31-a9cf-717495945fc2"}    
-    }
-    "Lauching job number $($d) with startdate {0:yyyy-MM-dd} {0:HH:mm:ss} and enddate {1:yyyy-MM-dd} {1:HH:mm:ss}" -f ($newstartdate,$newenddate) | Write-Log -LogPath $logfile
-    $datetoprocess = ($newstartdate.ToString("yyyy-MM-dd"))
-    $subscriptionID = $sub.subscriptionId
-    $jobname =  "AzRM_" + $subscriptionID + "_" + $datetoprocess
-    Start-RSJob -Name $jobname  -ScriptBlock $Launchsearch -FunctionsToImport  write-log, Get-RestAPIResponse -ArgumentList $app, $user, $newstartdate, $newenddate, $currentpath, $subscriptionID
-    $nbjobrunning = (Get-RSJob | where-object {$_.State -eq "running"}  | Measure-Object).count
-    while($nbjobrunning -ge 3)
-            {
-            start-sleep -seconds 2
-            $nbjobrunning = (Get-RSJob | where-object {$_.State -eq "running"}  | Measure-Object).count
-            }
-    $jobsok = Get-RSJob | where-object {$_.State -eq "Completed"}
-    if($jobsok)
-        {
-        foreach($jobok in $jobsok)
-            {
-            "Runspace Job $($jobok.Name) finished - dumping log"  | Write-Log -LogPath $logfile    
-            $logfilename = $jobok.Name + ".log"    
-            get-content $logfilename | out-file $logfile -Encoding UTF8 -append
-            remove-item $logfilename -confirm:$false -force
-            $jobok | remove-rsjob
-            "Runspace Job $($jobok.Name) finished - job removed"  | Write-Log -LogPath $logfile 
-            }
-        }
-    $jobsnok = Get-RSJob | where-object {$_.State -eq "Failed"}
-    if($jobsnok)
-        {
-        foreach($jobnok in $jobsnok)
-            {
-            "Runspace Job $($jobnok.Name) failed with error $($jobnok.Error)"  | Write-Log -LogPath $logfile -LogLevel "Error"      
-            "Runspace Job $($jobnok.Name) failed - dumping log"  | Write-Log -LogPath $logfile -LogLevel "Error"   
-            $logfilename = $jobnok.Name + ".log"    
-            get-content $logfilename | out-file $logfile -Encoding UTF8 -append
-            remove-item $logfilename -confirm:$false -force
-            $jobnok | remove-rsjob
-            "Runspace Job $($jobnok.Name) failed - job removed"  | Write-Log -LogPath $logfile -LogLevel "Error"   
+            else {
+                $read = $False
             }
         }
     }
-    #Waiting for final jobs to complete
-    $nbjobrunning = (Get-RSJob | where-object {$_.State -eq "running"}  | Measure-Object).count
-    while($nbjobrunning -ge 1)
-            {
-            start-sleep -seconds 2
-            $nbjobrunning = (Get-RSJob | where-object {$_.State -eq "running"}  | Measure-Object).count
-            }
-    $jobsok = Get-RSJob | where-object {$_.State -eq "Completed"}
-    if($jobsok)
+    elseif ($choice.ToUpper() -eq "A"){
+        $wantedSubscriptionsNameAndId = $subscriptionsNameAndId
+    }
+    else {
+        Write-Error "No subscription was selected. Exiting"
+        "No subscription was selected. Exiting" | Write-Log -LogPath $logFile -LogLevel Error
+        exit
+    }
+
+    $outputFile = $azureSubscriptionsFolder + "\AzRMsubscriptions_" + $tenant + ".json"
+    $subscriptionsRaw | ConvertTo-Json -Depth 99 | Out-File $outputFile -Encoding UTF8
+
+    $launchSearch =
     {
-    foreach($jobok in $jobsok)
-        {
-        "Runspace Job $($jobok.Name) finished - dumping log"  | Write-Log -LogPath $logfile    
-        $logfilename = $jobok.Name + ".log"    
-        get-content $logfilename | out-file $logfile -Encoding UTF8 -append
-        remove-item $logfilename -confirm:$false -force
-        $jobok | remove-rsjob
-        "Runspace Job $($jobok.Name) finished - job removed"  | Write-Log -LogPath $logfile 
+        param($newStartDate, $newEndDate, $currentPath, $subscriptionId, $appId, $tenant, $certificatePath, [SecureString]$certificateSecurePassword, [Bool]$needPassword)
+
+        Select-AzSubscription -SubscriptionID $subscriptionId -ErrorAction Stop
+
+        $dateToProcess = ($newStartDate.ToString("yyyy-MM-dd"))
+        $logFile = $currentPath + "\AzRM_" + $subscriptionId + "_" + $dateToProcess + ".log"
+        $tenant = ($user).split("@")[1]
+
+        $azureRMActivityFolder = $currentPath + "\azure_rm_activity"
+        if ((Test-Path $azureRMActivityFolder) -eq $false){
+            New-Item $azureRMActivityFolder -Type Directory
+        }
+
+        $totalHours = [Math]::Floor((New-TimeSpan -Start $newStartDate -End $newEndDate).TotalHours)
+        if ($totalHours -eq 24){
+            $totalHours--
+        }
+        for ($h=0; $h -le $totalHours; $h++){
+            if ($h -eq 0){
+                $newStartHour = $newStartDate
+                $newEndHour = $newStartDate.AddMinutes(59 - $newStartDate.Minute).AddSeconds(60 - $newStartDate.Second)
+            }
+            elseif ($h -eq $totalHours){
+                $newStartHour = $newEndHour
+                $newEndHour = $newEndDate
+            }
+            else {
+                $newStartHour = $newEndHour
+                $newEndHour = $newStartHour.addHours(1)
+            }
+            "Processing Azure Resource Manager activity logs between {0:yyyy-MM-dd} {0:HH:mm:ss} and {1:yyyy-MM-dd} {1:HH:mm:ss}" -f ($newStartHour, $newEndHour) | Write-Log -LogPath $logFile
+
+            $outputDate = "{0:yyyy-MM-dd}_{0:HH-00-00}" -f ($newStartHour)
+            $dateStart = "{0:s}" -f $newStartHour + "Z"
+            $dateEnd  = "{0:s}" -f $newEndHour + "Z"
+
+            $azureRMActivityEvents = Get-AzureRMActivityLog -dateStart $dateStart -dateEnd $dateEnd -certificatePath $certificatePath -certificateSecurePassword $certificateSecurePassword -needPassword $needPassword -appId $appId -tenant $tenant -logFile $logFile
+
+            $folderToProcess = $azureRMActivityFolder + "\" + $dateToProcess
+            if ((Test-Path $folderToProcess) -eq $false){
+                New-Item $folderToProcess -Type Directory
+            }
+            $outputFile = $folderToProcess + "\AzRM_" + $tenant + "_" + $subscriptionId + "_" + $outputDate + ".json"
+            if ($azureRMActivityEvents){
+                $nbAzureRMActivityEvents = ($azureRMActivityEvents | Measure-Object).Count
+                "Dumping $($nbAzureRMActivityEvents) Azure Resource Manager activity logs events to $($outputFile)" | Write-Log -LogPath $logFile
+                for ($i=0; $i -lt $nbAzureRMActivityEvents; $i++){
+                    # we can't use ConvertTo-Json, cf. https://github.com/Azure/azure-powershell/issues/11353
+                    $azureRMActivityEvents[$i] = [Newtonsoft.Json.JsonConvert]::SerializeObject($azureRMActivityEvents[$i])
+                }
+                $azureRMActivityEvents | Out-File $outputFile -Encoding UTF8
+            }
+            else {
+                "No Azure Resource Manager activity logs event to dump to $($outputFile)" | Write-Log -LogPath $logFile -LogLevel "Warning"
+            }
         }
     }
-$jobsnok = Get-RSJob | where-object {$_.State -eq "Failed"}
-if($jobsnok)
-    {
-    foreach($jobnok in $jobsnok)
-        {
-        "Runspace Job $($jobnok.Name) failed with error $($jobnok.Error)"  | Write-Log -LogPath $logfile -LogLevel "Error"      
-        "Runspace Job $($jobnok.Name) failed - dumping log"  | Write-Log -LogPath $logfile -LogLevel "Error"   
-        $logfilename = $jobnok.Name + ".log"    
-        get-content $logfilename | out-file $logfile -Encoding UTF8 -append
-        remove-item $logfilename -confirm:$false -force
-        $jobnok | remove-rsjob
-        "Runspace Job $($jobnok.Name) failed - job removed"  | Write-Log -LogPath $logfile -LogLevel "Error"   
+
+    $totalTimeSpan = (New-TimeSpan -Start $startDate -End $endDate)
+
+    if (($totalTimeSpan.Hours -eq 0) -and ($totalTimeSpan.Minutes -eq 0) -and ($totalTimeSpan.Seconds -eq 0)){
+        $totaldays = $totalTimeSpan.days
+        $totalLoops = $totaldays
+    }
+    else {
+        $totaldays = $totalTimeSpan.days + 1
+        $totalLoops = $totalTimeSpan.days
+    }
+
+    Get-RSJob | Remove-RSJob -Force
+
+    foreach ($subscription in $wantedSubscriptionsNameAndId){
+        Write-Host "Starting processing Azure Resource Manager activity logs for $($subscription.Name) subscription"
+        "Starting processing Azure Resource Manager activity logs for $($subscription.Name) subscription" | Write-Log -LogPath $logFile
+
+        for ($d=0; $d -le $totalLoops; $d++){
+            if ($d -eq 0){
+                $newStartDate = $startDate
+                $newEndDate = Get-Date("{0:yyyy-MM-dd} 00:00:00.000" -f ($newStartDate.AddDays(1)))
+            }
+            elseif ($d -eq $totaldays){
+                $newEndDate = $endDate
+                $newStartDate = Get-Date("{0:yyyy-MM-dd} 00:00:00.000" -f ($newEndDate))
+            }
+            else {
+                $newStartDate = $newEndDate
+                $newEndDate = $newEndDate.AddDays(1)
+            }
+
+            "Lauching job number $($d) with startDate {0:yyyy-MM-dd} {0:HH:mm:ss} and endDate {1:yyyy-MM-dd} {1:HH:mm:ss}" -f ($newStartDate, $newEndDate) | Write-Log -LogPath $logFile
+            $dateToProcess = ($newStartDate.ToString("yyyy-MM-dd"))
+            $subscriptionId = $subscription.Id
+            $jobName = "AzRM_" + $subscriptionId + "_" + $dateToProcess
+
+            Start-RSJob -Name $jobName -ScriptBlock $launchSearch -FunctionsToImport Write-Log, Connect-AzApplication, Get-AzureRMActivityLog -ArgumentList $newStartDate, $newEndDate, $currentPath, $subscriptionId, $appId, $tenant, $certificatePath, $certificateSecurePassword, $needPassword
+
+            $maxJobRunning = 3
+
+            $jobRunningCount = (Get-RSJob | Where-Object {$_.State -eq "Running"} | Measure-Object).Count
+            while ($jobRunningCount -ge $maxJobRunning){
+                Start-Sleep -Seconds 1
+                $jobRunningCount = (Get-RSJob | Where-Object {$_.State -eq "Running"} | Measure-Object).Count
+            }
+            $jobsDone = Get-RSJob | Where-Object {$_.State -eq "Completed"}
+            if ($jobsDone){
+                foreach ($jobDone in $jobsDone){
+                    "Runspace Job $($jobDone.Name) has finished - dumping log" | Write-Log -LogPath $logFile
+                    $logFileName = $jobDone.Name + ".log"
+                    Get-Content $logFileName | Out-File $logFile -Encoding UTF8 -Append
+                    Remove-Item $logFileName -Confirm:$false -Force
+                    $jobDone | Remove-RSJob
+                    "Runspace Job $($jobDone.Name) finished - job removed" | Write-Log -LogPath $logFile
+                }
+            }
+            $jobsFailed = Get-RSJob | Where-Object {$_.State -eq "Failed"}
+            if ($jobsFailed){
+                foreach ($jobFailed in $jobsFailed){
+                    "Runspace Job $($jobFailed.Name) failed with error $($jobFailed.Error)" | Write-Log -LogPath $logFile -LogLevel "Error"
+                    "Runspace Job $($jobFailed.Name) failed - dumping log" | Write-Log -LogPath $logFile -LogLevel "Error"
+                    $logFileName = $jobFailed.Name + ".log"
+                    Get-Content $logFileName | Out-File $logFile -Encoding UTF8 -Append
+                    Remove-Item $logFileName -Confirm:$false -Force
+                    $jobFailed | Remove-RSJob
+                    "Runspace Job $($jobFailed.Name) failed - job removed" | Write-Log -LogPath $logFile -LogLevel "Error"
+                }
+            }
+        }
+
+        # Waiting for final jobs to complete
+        $jobRunningCount = (Get-RSJob | Where-Object {$_.State -eq "Running"} | Measure-Object).Count
+        while ($jobRunningCount -ge 1){
+            Start-Sleep -Seconds 1
+            $jobRunningCount = (Get-RSJob | Where-Object {$_.State -eq "Running"} | Measure-Object).Count
+        }
+        $jobsDone = Get-RSJob | Where-Object {$_.State -eq "Completed"}
+        if ($jobsDone){
+            foreach ($jobDone in $jobsDone){
+                "Runspace Job $($jobDone.Name) has finished - dumping log" | Write-Log -LogPath $logFile
+                $logFileName = $jobDone.Name + ".log"
+                Get-Content $logFileName | Out-File $logFile -Encoding UTF8 -Append
+                Remove-Item $logFileName -Confirm:$false -Force
+                $jobDone | Remove-RSJob
+                "Runspace Job $($jobDone.Name) finished - job removed" | Write-Log -LogPath $logFile
+            }
+        }
+        $jobsFailed = Get-RSJob | Where-Object {$_.State -eq "Failed"}
+        if ($jobsFailed){
+            foreach ($jobFailed in $jobsFailed){
+                "Runspace Job $($jobFailed.Name) failed with error $($jobFailed.Error)" | Write-Log -LogPath $logFile -LogLevel "Error"
+                "Runspace Job $($jobFailed.Name) failed - dumping log" | Write-Log -LogPath $logFile -LogLevel "Error"
+                $logFileName = $jobFailed.Name + ".log"
+                Get-Content $logFileName | Out-File $logFile -Encoding UTF8 -Append
+                Remove-Item $logFileName -Confirm:$false -Force
+                $jobFailed | Remove-RSJob
+                "Runspace Job $($jobFailed.Name) failed - job removed" | Write-Log -LogPath $logFile -LogLevel "Error"
+            }
         }
     }
 }
-}
-
-
-
-
-
-
-
-
-
