@@ -1,18 +1,24 @@
-name: Docker Image CI
+name: Publish Docker image
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+    branches:
+      - 'main'
 
 jobs:
-
-  build:
-
+  push_to_registry:
     runs-on: ubuntu-latest
-
     steps:
-    - uses: actions/checkout@v2
-    - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag dfir-o365rc:$(date +%s)
+      - uses: actions/checkout@v4
+
+      - name: DockerHub Login
+        uses: docker/login-action@e92390c5fb421da1463c202d546fed0ec5c39f20
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build the Docker image
+        run: docker build . --file Dockerfile --tag ${{ secrets.DOCKERHUB_REPO }}
+
+      - name: Docker Push
+        run: docker push ${{ secrets.DOCKERHUB_REPO }}
