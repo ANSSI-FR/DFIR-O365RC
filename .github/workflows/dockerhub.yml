@@ -1,0 +1,24 @@
+name: Publish Docker image to Dockerhub
+
+on:
+  push:
+    branches:
+      - 'main'
+
+jobs:
+  push_to_dockerhub:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: DockerHub Login
+        uses: docker/login-action@e92390c5fb421da1463c202d546fed0ec5c39f20
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build the Docker image
+        run: docker build . --file Dockerfile --tag ${{ secrets.DOCKERHUB_REPO }}
+
+      - name: DockerHub Push
+        run: docker push ${{ secrets.DOCKERHUB_REPO }}
