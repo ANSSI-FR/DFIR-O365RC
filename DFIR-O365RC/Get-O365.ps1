@@ -104,7 +104,7 @@
 
     "Lauching job with startDate {0:yyyy-MM-dd} and endDate {1:yyyy-MM-dd}" -f ($newStartDate, $newEndDate) | Write-Log -LogPath $logFile
     $dateToProcess = ($newStartDate.ToString("yyyy-MM-dd"))
-    $jobName = "UnifiedAuditLogPurview" + $dateToProcess
+    $jobName = "UnifiedAuditLogPurview_" + $dateToProcess
 
     Start-RSJob -Name $jobName -ScriptBlock $launchSearch -FunctionsToImport Get-UnifiedAuditLogPurview, Write-Log -ArgumentList $cert, $appId, $tenant, $newStartDate, $newEndDate, $requestType, $recordTypes, $operations, $freeTexts, $IPAddresses, $userIds, $currentPath
 
@@ -213,7 +213,7 @@ function Get-O365 {
 
         $dateToProcess = ($newStartDate.ToString("yyyy-MM-dd"))
         $actualdate = $(get-date -f yyyy-MM-dd-hh-mm-ss)
-        $logFile = $currentPath + "\UnifiedAuditLog" + $dateToProcess + ".log"
+        $logFile = $currentPath + "\UnifiedAuditLog_" + $dateToProcess + ".log"
 
         $unifiedAuditFolder = $currentPath + "\O365_unified_audit_logs"
         if ((Test-Path $unifiedAuditFolder) -eq $false){
@@ -316,6 +316,27 @@ function Get-O365 {
 
     Get-RSJob | Remove-RSJob -Force
 
+    "Checking the status of Unified Audit Log"| Write-Log -LogPath $logFile
+    Connect-ExchangeOnlineApplication -logFile $logFile -certificate $cert -appId $appId -organization $tenant -commandNames "Get-AdminAuditLogConfig"
+    try {
+        $adminAuditLogConfig = Get-AdminAuditLogConfig
+        $isIngestionEnabled = $adminAuditLogConfig.UnifiedAuditLogIngestionEnabled
+        if (-not $isIngestionEnabled){
+            Write-Error "Log ingestion is not enabled. This means that the unified audit log is disabled. This is not the default setting, please check https://learn.microsoft.com/en-us/purview/audit-log-enable-disable for more information. Exiting"
+            "Log ingestion is not enabled. This means that the unified audit log is disabled. This is not the default setting, please check https://learn.microsoft.com/en-us/purview/audit-log-enable-disable for more information. Exiting" | Write-Log -LogPath $logFile -LogLevel "Error"
+            $adminAuditLogConfig | Write-Log -LogPath $logFile -LogLevel "Error"
+        }
+        else {
+            $unifiedAuditLogFirstOptInDate = $adminAuditLogConfig.UnifiedAuditLogFirstOptInDate.ToString()
+            "Unified Audit Log First Opt In Date : $unifiedAuditLogFirstOptInDate" | Write-Log -LogPath $logFile -LogLevel "Info"
+        }
+    }
+    catch {
+        $errormessage = $_.Exception.Message
+        Write-Warning "Error while trying to execute Get-AdminAuditLogConfig : $errormessage. Continuing"
+        "Error while trying to execute Get-AdminAuditLogConfig : $errormessage. Continuing" | Write-Log -LogPath $logFile -LogLevel "Warning"
+    }
+
     "Checking permissions for app $($appId)"| Write-Log -LogPath $logFile
     Connect-ExchangeOnlineApplication -logFile $logFile -certificate $cert -appId $appId -organization $tenant
     try {
@@ -346,7 +367,7 @@ function Get-O365 {
 
         "Lauching job number $($d) with startDate {0:yyyy-MM-dd} {0:HH:mm:ss} and endDate {1:yyyy-MM-dd} {1:HH:mm:ss}" -f ($newStartDate, $newEndDate) | Write-Log -LogPath $logFile
         $dateToProcess = ($newStartDate.ToString("yyyy-MM-dd"))
-        $jobName = "UnifiedAuditLog" + $dateToProcess
+        $jobName = "UnifiedAuditLog_" + $dateToProcess
 
         Start-RSJob -Name $jobName -ScriptBlock $launchSearch -FunctionsToImport Connect-ExchangeOnlineApplication, Write-Log, Get-LargeUnifiedAuditLog, Get-MailboxAuditLog -ArgumentList $cert, $appId, $tenant, $newStartDate, $newEndDate, $requestType, $recordTypes, $operations, $freeTexts, $IPAddresses, $userIds, $currentPath
 

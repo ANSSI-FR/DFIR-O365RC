@@ -66,16 +66,15 @@ If you are investigating other Azure resources, with DFIR-O365RC:
 
 ## Installation and prerequisites
 
+
 ### Using Docker
 
 _This is the recommended way of using DFIR-O365RC_
 
-Clone the repository and use `docker compose` (or the legacy `docker-compose`) to build the image, run the container and mount a volume (in the `output/` folder):
+Just type :
 
 ```bash
-sudo docker compose run dfir-o365rc
-# using legacy Compose V1
-sudo docker-compose run dfir-o365rc
+sudo docker run --rm -v .:/mnt/host -it anssi/dfir-o365rc:latest
 ```
 
 DFIR-O365RC is ready to use:
@@ -87,60 +86,26 @@ https://github.com/ANSSI-FR/DFIR-O365RC
 PS /mnt/host/output>
 ```
 
-### Manual Installation
+If you would like to build your Docker image manually, clone the repository and use `docker compose` (or the legacy `docker-compose`) to build the image, run the container and mount a volume (in the `output/` folder):
 
-Clone the DFIR-O365RC repository. The module works on *PowerShell Desktop* and *PowerShell Core*.
+```bash
+sudo docker compose run dfir-o365rc
+# using legacy Compose V1
+sudo docker-compose run dfir-o365rc
+```
+
+### Using PowerShell
+
+You can install the module on *PowerShell Desktop* and *PowerShell Core*.
 
 Please note that the `Connect-ExchangeOnline` cmdlet [requires Microsoft .NET Framework 4.7.2 or later](https://learn.microsoft.com/en-us/powershell/exchange/exchange-online-powershell-v2?view=exchange-ps#windows).
 
-DFIR-O365RC uses Boe Prox's [PoshRSJob](https://github.com/proxb/PoshRSJob) module as well as a lot of Microsoft modules to interact with the required SDKs.
-
-Install them by running:
-
+To install the module from the PowerShell Gallery :
 ```powershell
-Install-Module Az.Accounts -RequiredVersion 3.0.2
-Install-Module Az.Monitor -RequiredVersion 5.2.1
-Install-Module Az.Resources -RequiredVersion 7.2.0
-Install-Module ExchangeOnlineManagement -RequiredVersion 3.5.1
-Install-Module Microsoft.Graph.Authentication -RequiredVersion 2.20.0
-Install-Module Microsoft.Graph.Applications -RequiredVersion 2.20.0
-Install-Module Microsoft.Graph.Beta.Reports -RequiredVersion 2.20.0
-Install-Module Microsoft.Graph.Beta.Security -RequiredVersion 2.20.0
-Install-Module Microsoft.Graph.Identity.DirectoryManagement -RequiredVersion 2.20.0
-Install-Module PoshRSJob -RequiredVersion 1.7.4.4
+Install-Module -Name
 ```
 
-Once the modules are installed, launch a PowerShell prompt and locate your Powershell modules path:
-
-```powershell
-PS> $env:PSModulePath
-```
-
-Copy the [DFIR-O365RC directory](DFIR-O365RC/) in one of your modules path, for example:
-
-- on Windows:
-
-  - `%UserProfile%\Documents\WindowsPowerShell\Modules`
-
-  - `%ProgramFiles%\WindowsPowerShell\Modules`
-
-  - `%SystemRoot%\system32\WindowsPowerShell\v1.0\Modules`
-
-- on Linux:
-
-  - `/home/%username%/.local/share/powershell/Modules`
-
-  - `/usr/local/share/powershell/Modules`
-
-  - `/opt/microsoft/powershell/7/Modules`
-
-Restart the PowerShell prompt and import the DFIR-O365RC module:
-
-```powershell
-PS> Import-Module DFIR-O365RC
-```
-
-
+You can also install the module manually by cloning the DFIR-O365RC repository, install the required dependencies (check [DFIR-O365RC.psd1](DFIR-O365RC/DFIR-O365RC.psd1)) and add the [DFIR-O365RC directory](DFIR-O365RC/) in one of your PowerShell's modules path.
 
 ## Managing the DFIR-O365RC application
 
@@ -353,8 +318,8 @@ Get-O365Light -startDate $startDate -endDate $endDate -appId $appId -tenant $ten
 Retrieve Unified Audit log events considered of interest in a time window between -90 days and -30 days from now:
 
 ```powershell
-$endDate = Get-Date.AddDays(-30)
-$startDate = Get-Date.AddDays(-90)
+$endDate = (Get-Date).AddDays(-30)
+$startDate = (Get-Date).AddDays(-90)
 Get-O365Light -startDate $startDate -endDate $endDate -appId $appId -tenant $tenant -certificatePath $certificatePath
 ```
 
