@@ -1,7 +1,9 @@
 
 ![DFIR-O365RC](./logo.png)
 
-[![Docker Image CI](https://github.com/ANSSI-FR/DFIR-O365RC/actions/workflows/docker-image.yml/badge.svg)](https://github.com/ANSSI-FR/DFIR-O365RC/actions/workflows/docker-image.yml)
+[![Publish Docker image to Dockerhub](https://github.com/ANSSI-FR/DFIR-O365RC/actions/workflows/dockerhub.yml/badge.svg)](https://github.com/ANSSI-FR/DFIR-O365RC/actions/workflows/dockerhub.yml/badge.svg)
+[![Publish module to PowerShell Gallery](https://github.com/ANSSI-FR/DFIR-O365RC/actions/workflows/psgallery.yml/badge.svg)](https://github.com/ANSSI-FR/DFIR-O365RC/actions/workflows/psgallery.yml/badge.svg)
+
 ---
 ## Table of contents:
 
