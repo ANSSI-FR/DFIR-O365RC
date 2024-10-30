@@ -102,7 +102,7 @@ Please note that the `Connect-ExchangeOnline` cmdlet [requires Microsoft .NET Fr
 
 To install the module from the PowerShell Gallery :
 ```powershell
-Install-Module -Name
+Install-Module -Name DFIR-O365RC
 ```
 
 You can also install the module manually by cloning the DFIR-O365RC repository, install the required dependencies (check [DFIR-O365RC.psd1](DFIR-O365RC/DFIR-O365RC.psd1)) and add the [DFIR-O365RC directory](DFIR-O365RC/) in one of your PowerShell's modules path.
