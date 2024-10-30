@@ -16,7 +16,7 @@
     GUID = '84b1ed98-447f-4d4e-aa52-fd9339cf7cca'
 
     # Author of this module
-    Author = 'leonard.savina@ssi.gouv.fr'
+    Author = 'INM-CLOUD@ssi.gouv.fr'
 
     # Company or vendor of this module
     CompanyName = 'CERT-FR'
@@ -25,7 +25,7 @@
     Description = 'The DFIR-O365RC module will extract logs from the unified audit log (using Exchange Online and Purview), Entra ID Sign In logs, Entra ID Audit Logs, Azure Monitor and Azure DevOps activity logs'
 
     # Minimum version of the Windows PowerShell engine required by this module
-    PowerShellVersion = '5.0'
+    PowerShellVersion = '5.1'
 
     # Modules that must be imported into the global environment prior to importing this module
     RequiredModules = @(
@@ -95,7 +95,7 @@
         PSData = @{
 
             # Tags applied to this module. These help with module discovery in online galleries.
-            Tags = @("O365", "Security", "Forensics", "DFIR", "Exchange", "Defender", "AzureAD", "MSGraph", "Azure", "DevOps", "Purview", "Entra ID", "Logs")
+            Tags = @("O365", "Security", "Forensics", "DFIR", "Exchange", "Defender", "AzureAD", "MSGraph", "Azure", "DevOps", "Purview", "EntraID", "Logs")
 
             # ReleaseNotes of this module
             ReleaseNotes = '
