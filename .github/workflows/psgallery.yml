@@ -11,4 +11,4 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Publish to PowerShell Gallery
-        run: docker run -v /home/runner/work/DFIR-O365RC/DFIR-O365RC:/mount_point mcr.microsoft.com/dotnet/sdk:8.0 pwsh -Command Publish-PSResource -Path "/mount_point/DFIR-O365RC" -Repository "PSGallery" -ApiKey "${{ secrets.PSGALLERY_TOKEN }}" -SkipModuleManifestValidate $true
+        run: docker run -v $GITHUB_WORKSPACE:/mount_point mcr.microsoft.com/dotnet/sdk:8.0 pwsh -Command Publish-PSResource -Path "/mount_point/DFIR-O365RC" -Repository "PSGallery" -ApiKey "${{ secrets.PSGALLERY_TOKEN }}" -SkipModuleManifestValidate $true
