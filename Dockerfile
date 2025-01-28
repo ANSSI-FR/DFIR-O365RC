@@ -10,6 +10,10 @@ RUN pwsh -command Install-Module -Name Microsoft.Graph.Beta.Reports -RequiredVer
 RUN pwsh -command Install-Module -Name Microsoft.Graph.Beta.Security -RequiredVersion 2.20.0
 RUN pwsh -command Install-Module -Name Microsoft.Graph.Identity.DirectoryManagement -RequiredVersion 2.20.0
 RUN pwsh -command Install-Module -Name PoshRSJob -RequiredVersion 1.7.4.4
+RUN pwsh -command mkdir /tmp/posh
+RUN pwsh -command Invoke-WebRequest -UseBasicParsing -Uri 'https://www.powershellgallery.com/api/v2/package/PoshRSJob/1.7.4.4' -OutFile '/tmp/posh/PoshRSJob.1.7.4.4.nupkg'
+RUN pwsh -command Register-PSRepository -Name local -SourceLocation /tmp/posh -InstallationPolicy Trusted
+RUN pwsh -command Install-Module PoshRSJob -Verbose -Scope AllUsers -Repository local
 RUN mkdir -p /root/.config/powershell
 RUN echo 'Write-Host -ForegroundColor Yellow "DFIR-O365RC: PowerShell module for Microsoft 365 and Entra ID log collection"' > /root/.config/powershell/Microsoft.PowerShell_profile.ps1
 RUN echo 'Write-Host -ForegroundColor Yellow "https://github.com/ANSSI-FR/DFIR-O365RC"' >> /root/.config/powershell/Microsoft.PowerShell_profile.ps1
