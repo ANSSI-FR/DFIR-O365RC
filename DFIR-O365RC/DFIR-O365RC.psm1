@@ -893,7 +893,9 @@ function Get-UnifiedAuditLogPurview {
             [Int]$retryCount = "0"
             do {
                 try {
+                    "Trying to get events for query $auditLogQueryId" | Write-Log -LogPath $logFile -LogLevel "Info"
                     $records = Get-MgBetaSecurityAuditLogQueryRecord -AuditLogQueryId $auditLogQueryId -All -ErrorAction Stop
+                    "Got events for query $auditLogQueryId" | Write-Log -LogPath $logFile -LogLevel "Info"
                     $stopLoop = $true
                 }
                 catch {
@@ -972,7 +974,7 @@ function Get-MailboxAuditLog {
 				$stopLoop = $true
             }
             catch {
-				if ($_.ToString().contains("ManagementObjectNotFoundException")){
+				if ($_.ToString().contains("ManagementObjectNotFoundException") -or $_.ToString().contains("couldn't be found on")){
                     "$($userId) does not have a mailbox" | Write-Log -LogPath $logFile -LogLevel "Warning"
                     $countMailboxAuditLogEntries = 0
                     $stopLoop = $true
