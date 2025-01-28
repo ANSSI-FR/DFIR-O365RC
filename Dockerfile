@@ -9,7 +9,7 @@ RUN pwsh -command Install-Module -Name Microsoft.Graph.Applications -RequiredVer
 RUN pwsh -command Install-Module -Name Microsoft.Graph.Beta.Reports -RequiredVersion 2.20.0
 RUN pwsh -command Install-Module -Name Microsoft.Graph.Beta.Security -RequiredVersion 2.20.0
 RUN pwsh -command Install-Module -Name Microsoft.Graph.Identity.DirectoryManagement -RequiredVersion 2.20.0
-RUN pwsh -command Install-Module -Name PoshRSJob -RequiredVersion 1.7.4.4
+#RUN pwsh -command Install-Module -Name PoshRSJob -RequiredVersion 1.7.4.4
 RUN pwsh -command mkdir /tmp/posh
 RUN pwsh -command Invoke-WebRequest -UseBasicParsing -Uri 'https://www.powershellgallery.com/api/v2/package/PoshRSJob/1.7.4.4' -OutFile '/tmp/posh/PoshRSJob.1.7.4.4.nupkg'
 RUN pwsh -command Register-PSRepository -Name local -SourceLocation /tmp/posh -InstallationPolicy Trusted
