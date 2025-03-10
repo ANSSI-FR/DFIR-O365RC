@@ -324,7 +324,7 @@ function Get-O365 {
         if (-not $isIngestionEnabled){
             Write-Error "Log ingestion is not enabled. This means that the unified audit log is disabled. This is not the default setting, please check https://learn.microsoft.com/en-us/purview/audit-log-enable-disable for more information"
             "Log ingestion is not enabled. This means that the unified audit log is disabled. This is not the default setting, please check https://learn.microsoft.com/en-us/purview/audit-log-enable-disable for more information" | Write-Log -LogPath $logFile -LogLevel "Error"
-            $adminAuditLogConfig | Write-Log -LogPath $logFile -LogLevel "Error"
+            $adminAuditLogConfig | ConvertTo-Json -Depth 99 | Write-Log -LogPath $logFile -LogLevel "Error"
         }
         else {
             $unifiedAuditLogFirstOptInDate = $adminAuditLogConfig.UnifiedAuditLogFirstOptInDate.ToString()
