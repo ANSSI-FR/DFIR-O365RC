@@ -231,7 +231,7 @@ In order to retrieve Microsoft Entra logs with the Microsoft Graph API you need 
 
  ## Functions included in the module
 
-The module has 9 functions:
+The module has 10 functions:
 
 | **Function**  | **Data Source**  | Retention | **Performance**  |  **Completeness** | **Details** |
 |---|---|---|---|---|---|
@@ -241,6 +241,7 @@ The module has 9 functions:
 | `Get-AADLogs` | Microsoft Entra Logs | 30 days |  Good | All Microsoft Entra Logs | Get tenant information and all Microsoft Entra logs: sign-ins logs and audit logs. |
 | `Get-AADApps` | Microsoft Entra Logs + Entra ID | 30 days |  Good | A subset of Microsoft Entra Logs only | Get Microsoft Entra audit logs related to Entra applications and service principals only.<br />The logs are enriched with application or service principal object information. |
 | `Get-AADDevices` | Microsoft Entra Logs + Entra ID | 30 days |  Good | A subset of Microsoft Entra Logs only | Get Microsoft Entra audit logs related to Entra ID joined or registered devices only.<br />The logs are enriched with device object information. |
+| `Get-AADUsers` | N/A | N/A |  Good | Complete | Microsoft Entra ID users and their authentication methods |
 | `Search-O365` | Unified Audit Log / Mailbox Audit Log** | 90 days / 180 days* | Poor | A subset of Unified Audit Log only | Search for activity related to specific users, IP addresses or free texts. |
 | `Get-AzRMActivityLogs` | Azure Monitor Activity log | 90 days |  Good | All Azure Monitor Activity log | Get all Azure Monitor Activity log for a selected subset of subscriptions. |
 | `Get-AzDevOpsActivityLogs` | Azure DevOps audit log | 90 days |  Good | All Azure DevOps audit log | Get all Azure DevOps audit log for a selected subset of Azure DevOps organizations. |
@@ -307,7 +308,11 @@ $startDate = $endDate.AddDays(-30)
 Get-AADDevices -startDate $startDate -endDate $endDate -appId $appId -tenant $tenant -certificatePath $certificatePath
 ```
 
+Get Microsoft Entra users with their associated authentication methods:
 
+```powershell
+Get-AADUsers -appId $appId -tenant $tenant -certificatePath $certificatePath -authenticationMethods
+```
 
 Retrieve Unified Audit log events considered of interest from the past 30 days, except those related to Entra ID, which were already retrieved by the first command:
 
@@ -406,6 +411,11 @@ _Launching several cmdlet which uses Purview and will write to the same output f
   - a JSON file containing joined or registered devices: `AADDevices_example.onmicrosoft.com_devices_raw.json`;
   - a JSON file containing the enriched events: `AADDevices_example.onmicrosoft.com.json`.
 
+- `Get-AADUsers` will create in the `azure_ad_users` folder:
+  - a JSON file containing registered users: `AADUsers_example.onmicrosoft.com_users_raw.json`;
+  - a JSON file containing users' authentication settings: `AADUsers_example.onmicrosoft.com_users_settings_raw.json`;
+  - a JSON file containing enriched information of users: `AADUsers_example.onmicrosoft.com.json`.
+
 - `Get-AADLogs` will create:
   - in the `azure_ad_tenant` folder:
     - a JSON file containing general information on the tenant: `AADTenant_example.onmicrosoft.com.json`.
@@ -486,6 +496,11 @@ output
 ├───azure_ad_tenant
 │       AADTenant_example.onmicrosoft.com.json
 │
+├───azure_ad_users
+│       AADUsers_divreponse.onmicrosoft.com.json
+│       AADUsers_divreponse.onmicrosoft.com_users_raw.json
+│       AADUsers_divreponse.onmicrosoft.com_users_settings_raw.json
+|
 ├───azure_DevOps_activity
 │   ├───YYYY-MM-DD
 │   │       AzDevOps_example.onmicrosoft.com_%AzureDevOpsOrg%_YYYY-MM-DD_HH-00-00.json

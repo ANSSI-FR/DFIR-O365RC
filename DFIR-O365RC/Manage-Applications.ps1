@@ -344,6 +344,8 @@ function New-Application {
         $graphApplicationReadAll = $graphApi.AppRoles | Where-Object { $_.Value -eq 'Application.Read.All' }
         $graphDelegatedPermissionGrandReadAll = $graphApi.AppRoles | Where-Object { $_.Value -eq 'DelegatedPermissionGrant.Read.All' }
         $graphDeviceReadAll = $graphApi.AppRoles | Where-Object { $_.Value -eq 'Device.Read.All' }
+        $graphUserReadAll = $graphApi.AppRoles | Where-Object { $_.Value -eq 'User.Read.All' }
+        $graphUserAuthenticationMethodReadAll = $graphApi.AppRoles | Where-Object { $_.Value -eq 'UserAuthenticationMethod.Read.All' }
         $graphOrganizationReadAll = $graphApi.AppRoles | Where-Object { $_.Value -eq 'Organization.Read.All' }
         $graphRequiredAccess = @{
             ResourceAppId = $graphApi.AppId ;
@@ -362,6 +364,14 @@ function New-Application {
                 },
                 @{
                     Id = $graphDelegatedPermissionGrandReadAll.Id ;
+                    Type = "Role"
+                },
+                @{
+                    Id = $graphUserReadAll.Id ;
+                    Type = "Role"
+                },
+                @{
+                    Id = $graphUserAuthenticationMethodReadAll.Id ;
                     Type = "Role"
                 },
                 @{
