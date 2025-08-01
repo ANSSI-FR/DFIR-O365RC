@@ -622,7 +622,7 @@ function Get-MgPurviewAuditLog {
             }
         }
         if ($data.value -ne $null){
-            $data.value | ConvertTo-Json -Depth 99 | Out-File $outputFile -Encoding UTF8 -Append
+            $data.value.auditData | ConvertTo-Json -Depth 99 | Out-File $outputFile -Encoding UTF8 -Append
             if (-not $stopLoop){
                 "," | Out-File $outputFile -Encoding UTF8 -Append
             }
