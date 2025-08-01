@@ -565,6 +565,72 @@ function Get-AzDevOpsAuditLogs {
     return $APIresults
 }
 
+function Get-MgPurviewAuditLog {
+    param
+    (
+        [String]$auditLogQueryId,
+        [Parameter(Mandatory = $true)]
+        [System.Security.Cryptography.X509Certificates.X509Certificate2]$certificate,
+        [Parameter(Mandatory = $true)]
+        [String]$appId,
+        [Parameter(Mandatory = $true)]
+        [String]$tenant,
+        [Parameter(Mandatory = $true)]
+        [String]$logFile,
+        [Parameter(Mandatory = $true)]
+        [String]$outputFile
+    )
+    $uri = "https://graph.microsoft.com/beta/security/auditLog/queries/$auditLogQueryId/records"
+    $dumpCount = 0
+
+    $stopLoop = $false
+    [Int]$retryCount = "0"
+    "[" | Out-File $outputFile -Encoding UTF8 -Append
+    while ($stopLoop -eq $false){
+        try {
+            $data = Invoke-MgGraphRequest -Method GET -Uri $uri
+            $dumpCount = $dumpCount + $data["@odata.count"]
+            "Dumped $($dumpCount) events" | Write-Log -LogPath $logFile -LogLevel "Info"
+            if ($data["@odata.nextLink"] -eq $null){
+                $stopLoop = $true
+            }
+            else {
+                $uri = $data["@odata.nextLink"]
+            }
+        }
+        catch {
+            if ($retryCount -ge 10){
+                "Failed to dump events from Microsoft Graph Purview $($retryCount + 1) times - aborting" | Write-Log -LogPath $logFile -LogLevel "Error"
+                $data = @()
+                $stopLoop = $true
+            }
+            else {
+                $errorCode = $_.Exception.Response.StatusCode.value__
+                $errorMessage = $_.ErrorDetails.Message
+                "Failed to dump events from Microsoft Graph Purview $($retryCount + 1) times - sleeping and retrying - ${errorCode}: ${errorMessage}" | Write-Log -LogPath $logFile -LogLevel "Warning"
+                if ($errorCode -eq "429"){
+                    Start-Sleep -Seconds (15 * ($retryCount + 1))
+                }
+                elseif ($errorCode -eq "401" -or $errorCode -eq "403"){
+                    $retryCount = 10
+                    Connect-MicrosoftGraphApplication -certificate $certificate -appId $appId -tenant $tenant -logFile $logFile
+                }
+                else {
+                    Start-Sleep -Seconds 1
+                }
+                $retryCount = $retryCount + 1
+            }
+        }
+        if ($data.value -ne $null){
+            $data.value | ConvertTo-Json -Depth 99 | Out-File $outputFile -Encoding UTF8 -Append
+            if (-not $stopLoop){
+                "," | Out-File $outputFile -Encoding UTF8 -Append
+            }
+        }
+    }
+    "]" | Out-File $outputFile -Encoding UTF8 -Append
+}
+
 function Get-LargeUnifiedAuditLog {
     param
     (
@@ -891,49 +957,8 @@ function Get-UnifiedAuditLogPurview {
         if ($status -eq "succeeded"){
             $stopLoop = $false
             [Int]$retryCount = "0"
-            do {
-                try {
-                    "Trying to get events for query $auditLogQueryId" | Write-Log -LogPath $logFile -LogLevel "Info"
-                    $records = Get-MgBetaSecurityAuditLogQueryRecord -AuditLogQueryId $auditLogQueryId -All -ErrorAction Stop
-                    "Got events for query $auditLogQueryId" | Write-Log -LogPath $logFile -LogLevel "Info"
-                    $stopLoop = $true
-                }
-                catch {
-                    if ($retryCount -ge 10){
-                        "Failed to get events for Purview request $auditLogQueryId $($retryCount + 1) times - aborting" | Write-Log -LogPath $logFile -LogLevel "Error"
-                        $records = $null
-                        $stopLoop = $true
-                    }
-                    else {
-                        $errorMessage = $_.Exception.Message
-                        "Failed to get events for Purview request $auditLogQueryId $($retryCount + 1) times - reconnecting and retrying - $($errorMessage)" | Write-Log -LogPath $logFile -LogLevel "Warning"
-                        Connect-MicrosoftGraphApplication -certificate $certificate -appId $appId -tenant $tenant -logFile $logFile
-                        $retryCount = $retryCount + 1
-                    }
-                }
-            } while ($stopLoop -eq $false)
-
-            if ($null -ne $records){
-                $recordsCount = $records.Count
-                "Got $recordsCount events for Purview request $auditLogQueryId" | Write-Log -LogPath $logFile -LogLevel "Info"
-                "[" | Out-File $outputFile -Encoding UTF8 -Append
-                $i = 0
-                $records | ForEach-Object {
-                    if ($i % 10000 -eq 0){
-                        "Wrote $i events out of $recordsCount for query $auditLogQueryId"  | Write-Log -LogPath $logFile -LogLevel "Info"
-                    }
-                    $_ | Select-Object -ExpandProperty AuditData | Select-Object -ExpandProperty AdditionalProperties | ConvertTo-Json -Depth 99 | Out-File $outputFile -Encoding UTF8 -Append
-                    if ($i -ne ($recordsCount -1)){
-                        "," | Out-File $outputFile -Encoding UTF8 -Append
-                    }
-                    $i += 1
-                }
-                "]" | Out-File $outputFile -Encoding UTF8 -Append
-                "Wrote $i events out of $recordsCount for query $auditLogQueryId"  | Write-Log -LogPath $logFile -LogLevel "Info"
-            }
-            else {
-                "Got 0 events for query $auditLogQueryId" | Write-Log -LogPath $logFile -LogLevel "Warning"
-            }
+            "Trying to get events for query $auditLogQueryId" | Write-Log -LogPath $logFile -LogLevel "Info"
+            Get-MgPurviewAuditLog -auditLogQueryId $auditLogQueryId -certificate $certificate -appId $appId -tenant $tenant -logFile $logFile -outputFile $outputFile         
         }
     }
 }
