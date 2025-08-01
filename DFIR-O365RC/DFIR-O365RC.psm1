@@ -791,6 +791,7 @@ function Get-MicrosoftGraphLogs {
             elseif ($type -eq "AuditLogs"){
                     $AzureADEvents = Get-MgBetaAuditLogDirectoryAudit -All -Filter "activityDateTime ge $($dateStart) and activityDateTime lt $($dateEnd)" -ErrorAction Stop
             }
+            if ($AzureADEvents -ne $null){$AzureADEvents = $AzureADEvents.ToJsonString() | ConvertFrom-Json}
             $stopLoop = $true
         }
         catch {
