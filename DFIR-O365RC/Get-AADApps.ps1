@@ -94,6 +94,13 @@
     $servicePrincipalsOutputFile = $folderToProcess + "\AADApps_" + $tenant + "_service_principals_raw.json"
     $allServicePrincipals | ConvertTo-Json -Depth 99 | Out-File $servicePrincipalsOutputFile -Encoding UTF8
 
+    # Get all deleted service principals
+    "Getting all deleted service principals" | Write-Log -LogPath $logFile
+    $deletedServicePrincipals = Get-MgDirectoryDeletedItemAsServicePrincipal -All -ErrorAction Stop
+    if ($deletedServicePrincipals -ne $null){$deletedServicePrincipals = $deletedServicePrincipals.ToJsonString() | ConvertFrom-Json}
+    $deletedServicePrincipalsOutputFile = $folderToProcess + "\AADApps_" + $tenant + "_deleted_service_principals_raw.json"
+    $deletedServicePrincipals | ConvertTo-Json -Depth 99 | Out-File $deletedServicePrincipalsOutputFile -Encoding UTF8
+
     $enrichedServicePrincipalEvents = @()
     $uniqueServicePrincipals = $servicePrincipalEvents | Select-Object -ExpandProperty targetResources | Group-Object -Property Id
 
@@ -101,6 +108,9 @@
     foreach ($uniqueServicePrincipal in $uniqueServicePrincipals){
         # Get Service Principal object
         $servicePrincipalObject = $allServicePrincipals | Where-Object {$_.Id -eq $uniqueServicePrincipal.Name}
+        if ($null -eq $servicePrincipalObject){
+            $servicePrincipalObject = $deletedServicePrincipals | Where-Object {$_.Id -eq $uniqueServicePrincipal.Name}
+        }
         $eventsPerServicePrincipal = $servicePrincipalEvents | Where-Object { $_.targetResources.Id -eq $uniqueServicePrincipal.Name}
 
         if ($servicePrincipalObject){

@@ -52,7 +52,14 @@ function Get-AADUsers {
     $usersOutputFile = $folderToProcess + "\AADUsers_" + $tenant + "_users_raw.json"
     $allUsers | ConvertTo-Json -Depth 99 | Out-File $usersOutputFile -Encoding UTF8
     $countUsers = ($allUsers | Measure-Object).Count
-    "Total number of users in the tenant is $($countUsers)" | Write-Log -LogPath $logFile
+    "Total number of non-deleted users in the tenant is $($countUsers)" | Write-Log -LogPath $logFile
+
+    # Get all deleted users
+    "Getting all deleted users" | Write-Log -LogPath $logFile
+    $deletedUsers = Get-MgDirectoryDeletedItemAsUser -All -ErrorAction Stop
+    if ($deletedUsers -ne $null){$deletedUsers = $deletedUsers.ToJsonString() | ConvertFrom-Json}
+    $deletedUsersOutputFile = $folderToProcess + "\AADUsers_" + $tenant + "_deleted_users_raw.json"
+    $deletedUsers | ConvertTo-Json -Depth 99 | Out-File $deletedUsersOutputFile -Encoding UTF8
 
     # Get all users settings
     "Getting all users settings" | Write-Log -LogPath $logFile

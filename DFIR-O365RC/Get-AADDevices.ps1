@@ -107,7 +107,14 @@
     $devicesOutputFile = $folderToProcess + "\AADDevices_" + $tenant + "_devices_raw.json"
     $allDevices | ConvertTo-Json -Depth 99 | Out-File $devicesOutputFile -Encoding UTF8
     $countDevices = ($allDevices | Measure-Object).Count
-    "Total number of devices in the tenant is $($countDevices)" | Write-Log -LogPath $logFile
+    "Total number of non-deleted devices in the tenant is $($countDevices)" | Write-Log -LogPath $logFile
+
+    # Get all deleted devices
+    "Getting all deleted devices" | Write-Log -LogPath $logFile
+    $deletedDevices = Get-MgDirectoryDeletedItemAsDevice -All -ErrorAction Stop
+    if ($deletedDevices -ne $null){$deletedDevices = $deletedDevices.ToJsonString() | ConvertFrom-Json}
+    $deletedDevicesOutputFile = $folderToProcess + "\AADDevices_" + $tenant + "_deleted_devices_raw.json"
+    $deletedDevices | ConvertTo-Json -Depth 99 | Out-File $deletedDevicesOutputFile -Encoding UTF8
 
     $enrichedDeviceEvents = @()
     $uniqueDevices = $deviceEvents | Select-Object -ExpandProperty targetResources | Group-Object -Property Id
@@ -116,6 +123,9 @@
     foreach ($uniqueDevice in $uniqueDevices){
         # Get Device object
         $deviceObject = $allDevices | Where-Object {$_.Id -eq $uniqueDevice.Name}
+        if ($null -eq $deviceObject){
+            $deviceObject = $deletedDevices | Where-Object {$_.Id -eq $uniqueDevice.Name}
+        }
         $eventsPerDevice = $deviceEvents | Where-Object { $_.targetResources.Id -eq $uniqueDevice.Name}
 
         if ($deviceObject){
