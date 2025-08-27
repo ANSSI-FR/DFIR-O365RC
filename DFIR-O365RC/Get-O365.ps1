@@ -35,6 +35,13 @@
 
     $currentPath = (Get-Location).path
 
+    $dateDelta = $endDate - $startDate
+    if ($dateDelta -gt 180){
+        Write-Error "You can not query more than 180 days using Purview. Exiting"
+        "You can not query more than 180 days using Purview. Exiting" | Write-Log -LogPath $logFile -LogLevel "Error"
+        exit
+    }
+
     $launchSearch =
     {
         param($cert, $appId, $tenant, $newStartDate, $newEndDate, $requestType, $recordTypes, $operations, $freeTexts, $IPAddresses, $userIds, $currentPath)

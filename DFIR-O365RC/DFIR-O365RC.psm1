@@ -580,22 +580,32 @@ function Get-MgPurviewAuditLog {
         [Parameter(Mandatory = $true)]
         [String]$outputFile
     )
-    $uri = "https://graph.microsoft.com/beta/security/auditLog/queries/$auditLogQueryId/records"
+    $uri = "https://graph.microsoft.com/beta/security/auditLog/queries/$auditLogQueryId/records?`$top=10000"
     $dumpCount = 0
 
     $stopLoop = $false
     [Int]$retryCount = "0"
-    "[" | Out-File $outputFile -Encoding UTF8 -Append
+    [Int]$iterator = "0"
+    [String]$baseOutputFile = $outputFile
     while ($stopLoop -eq $false){
         try {
             $data = Invoke-MgGraphRequest -Method GET -Uri $uri
-            $dumpCount = $dumpCount + $data["@odata.count"]
-            "Dumped $($dumpCount) events" | Write-Log -LogPath $logFile -LogLevel "Info"
-            if ($data["@odata.nextLink"] -eq $null){
-                $stopLoop = $true
+            if ($data["@odata.count"] -eq ($data.value | Measure-Object).Count){
+                $dumpCount = $dumpCount + $data["@odata.count"]
+                "Collected $($dumpCount) events" | Write-Log -LogPath $logFile -LogLevel "Info"
+                $outputFile = $baseOutputFile.split(".json")[0] + "_$iterator" + ".json"
+                $iterator = $iterator + 1
+                if ($data["@odata.nextLink"] -eq $null){
+                    $stopLoop = $true
+                }
+                else {
+                    $uri = $data["@odata.nextLink"]
+                }
             }
             else {
-                $uri = $data["@odata.nextLink"]
+                "Mismatch in the number of events retrieved. Re-trying ..." | Write-Log -LogPath $logFile -LogLevel "Warning"
+                Start-Sleep -Seconds 1
+                $retryCount = $retryCount + 1
             }
         }
         catch {
@@ -621,14 +631,10 @@ function Get-MgPurviewAuditLog {
                 $retryCount = $retryCount + 1
             }
         }
-        if ($data.value -ne $null){
+        if ($data.value -ne $null -and $data["@odata.count"] -eq ($data.value | Measure-Object).Count){
             $data.value.auditData | ConvertTo-Json -Depth 99 | Out-File $outputFile -Encoding UTF8 -Append
-            if (-not $stopLoop){
-                "," | Out-File $outputFile -Encoding UTF8 -Append
-            }
         }
     }
-    "]" | Out-File $outputFile -Encoding UTF8 -Append
 }
 
 function Get-LargeUnifiedAuditLog {
@@ -958,7 +964,7 @@ function Get-UnifiedAuditLogPurview {
             $stopLoop = $false
             [Int]$retryCount = "0"
             "Trying to get events for query $auditLogQueryId" | Write-Log -LogPath $logFile -LogLevel "Info"
-            Get-MgPurviewAuditLog -auditLogQueryId $auditLogQueryId -certificate $certificate -appId $appId -tenant $tenant -logFile $logFile -outputFile $outputFile         
+            Get-MgPurviewAuditLog -auditLogQueryId $auditLogQueryId -certificate $certificate -appId $appId -tenant $tenant -logFile $logFile -outputFile $outputFile
         }
     }
 }
