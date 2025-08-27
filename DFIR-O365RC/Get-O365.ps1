@@ -36,7 +36,7 @@
     $currentPath = (Get-Location).path
 
     $dateDelta = $endDate - $startDate
-    if ($dateDelta -gt 180){
+    if ($dateDelta.TotalDays -gt 180){
         Write-Error "You can not query more than 180 days using Purview. Exiting"
         "You can not query more than 180 days using Purview. Exiting" | Write-Log -LogPath $logFile -LogLevel "Error"
         exit
