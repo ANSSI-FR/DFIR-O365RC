@@ -122,25 +122,12 @@ function Get-AzRMActivityLogs {
             $dateStart = "{0:s}" -f $newStartHour + "Z"
             $dateEnd  = "{0:s}" -f $newEndHour + "Z"
 
-            $azureRMActivityEvents = Get-AzureRMActivityLog -dateStart $dateStart -dateEnd $dateEnd -certificatePath $certificatePath -certificateSecurePassword $certificateSecurePassword -needPassword $needPassword -appId $appId -tenant $tenant -logFile $logFile
-
             $folderToProcess = $azureRMActivityFolder + "\" + $dateToProcess
             if ((Test-Path $folderToProcess) -eq $false){
                 New-Item $folderToProcess -Type Directory
             }
             $outputFile = $folderToProcess + "\AzRM_" + $tenant + "_" + $subscriptionId + "_" + $outputDate + ".json"
-            if ($azureRMActivityEvents){
-                $nbAzureRMActivityEvents = ($azureRMActivityEvents | Measure-Object).Count
-                "Dumping $($nbAzureRMActivityEvents) Azure Resource Manager activity logs events to $($outputFile)" | Write-Log -LogPath $logFile
-                for ($i=0; $i -lt $nbAzureRMActivityEvents; $i++){
-                    # we can't use ConvertTo-Json, cf. https://github.com/Azure/azure-powershell/issues/11353
-                    $azureRMActivityEvents[$i] = [Newtonsoft.Json.JsonConvert]::SerializeObject($azureRMActivityEvents[$i])
-                }
-                $azureRMActivityEvents | Out-File $outputFile -Encoding UTF8
-            }
-            else {
-                "No Azure Resource Manager activity logs event to dump to $($outputFile)" | Write-Log -LogPath $logFile -LogLevel "Warning"
-            }
+            Get-AzureRMActivityLog -dateStart $dateStart -dateEnd $dateEnd -certificatePath $certificatePath -certificateSecurePassword $certificateSecurePassword -needPassword $needPassword -appId $appId -tenant $tenant -logFile $logFile -outputFile $outputFile
         }
     }
 

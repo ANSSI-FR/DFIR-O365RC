@@ -143,22 +143,13 @@ function Get-AzDevOpsActivityLogs {
             $auditStart = "{0:s}" -f $newStartHour + "Z"
             $auditEnd = "{0:s}" -f $newEndhour + "Z"
             $uri = "https://auditservice.dev.azure.com/$($organizationName)/_apis/audit/auditlog?startTime=$($auditStart)&endTime=$($auditEnd)&api-version=7.1-preview.1"
-
-            $azureDevOpsActivityEvents = Get-AzDevOpsAuditLogs -certificatePath $certificatePath -certificateSecurePassword $certificateSecurePassword -needPassword $needPassword -tenant $tenant -appId $appId -uri $uri -logFile $logFile
-
             $folderToProcess = $azureDevOpsActivityFolder + "\" + $dateToProcess
             if ((Test-Path $folderToProcess) -eq $false){
                 New-Item $folderToProcess -Type Directory
             }
             $outputFile = $folderToProcess + "\AzDevOps_" + $tenant + "_" + $organizationName + "_" + $outputDate + ".json"
-            if ($azureDevOpsActivityEvents){
-                $nbAzureDevOpsActivityEvents = ($azureDevOpsActivityEvents | Measure-Object).Count
-                "Dumping $($nbAzureDevOpsActivityEvents) Azure DevOps activity logs events to $($outputFile)" | Write-Log -LogPath $logFile
-                $azureDevOpsActivityEvents | ConvertTo-Json -Depth 99 | Out-File $outputFile -Encoding UTF8
-            }
-            else {
-                "No Azure DevOps activity logs event to dump to $($outputFile)" | Write-Log -LogPath $logFile -LogLevel "Warning"
-            }
+
+            Get-AzDevOpsAuditLogs -certificatePath $certificatePath -certificateSecurePassword $certificateSecurePassword -needPassword $needPassword -tenant $tenant -appId $appId -uri $uri -logFile $logFile -outputFile $outputFile
         }
     }
 

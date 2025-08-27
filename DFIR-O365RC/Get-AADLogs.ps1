@@ -94,15 +94,7 @@ function Get-AADLogs {
             $outputFile = $AzureADAuditFolder + "\AADAuditLog_" + $tenant + "_" + $outputdate + ".json"
             $auditStart = "{0:s}" -f $newStartDate + "Z"
             $auditEnd = "{0:s}" -f $newEndDate + "Z"
-            $AzureADAuditEvents = Get-MicrosoftGraphLogs -type "AuditLogs" -dateStart $auditStart -dateEnd $auditEnd -certificate $cert -appId $appId -tenant $tenant -logFile $logFile
-            if ($AzureADAuditEvents){
-                $nbAzureADAuditEvents = ($AzureADAuditEvents | Measure-Object).Count
-                "Dumping $($nbAzureADAuditEvents) Entra ID audit events to $($outputFile)" | Write-Log -LogPath $logFile
-                $AzureADAuditEvents | ConvertTo-Json -Depth 99 | Out-File $outputFile -Encoding UTF8
-            }
-            else {
-                "No Entra ID audit event to dump to $($outputFile)" | Write-Log -LogPath $logFile -LogLevel "Warning" 
-            }
+            Get-MicrosoftGraphLogs -type "AuditLogs" -dateStart $auditStart -dateEnd $auditEnd -certificate $cert -appId $appId -tenant $tenant -logFile $logFile -outputFile $outputFile
         }
 
         # Get Entra ID sign in logs 
@@ -136,20 +128,13 @@ function Get-AADLogs {
 
                     $signInsStart = "{0:s}" -f $newStartHour + "Z"
                     $signInsEnd = "{0:s}" -f $newEndHour + "Z"
-                    $AzureADSignInEvents = Get-MicrosoftGraphLogs -type "SignIns" -tenantSize $tenantSize -dateStart $signInsStart -dateEnd $signInsEnd -certificate $cert -appId $appId -tenant $tenant -logFile $logFile
                     $folderToProcess = $AzureADSignInsFolder + "\" + $dateToProcess
                     if ((Test-Path $folderToProcess) -eq $false){
                         New-Item $folderToProcess -Type Directory
                     }
                     $outputFile = $folderToProcess + "\AADSigninLog_" + $tenant + "_" + $outputdate + ".json"
-                    if ($AzureADSignInEvents){
-                        $nbADSigninEvents = ($AzureADSignInEvents | Measure-Object).Count
-                        "Dumping $($nbADSigninEvents) Entra ID sign in events to $($outputFile)" | Write-Log -LogPath $logFile
-                        $AzureADSignInEvents | ConvertTo-Json -Depth 99 | Out-File $outputFile -Encoding UTF8 
-                    }
-                    else {
-                        "No Entra ID sign in events to dump to $($outputFile)" | Write-Log -LogPath $logFile -LogLevel "Warning"
-                    }
+
+                    Get-MicrosoftGraphLogs -type "SignIns" -tenantSize $tenantSize -dateStart $signInsStart -dateEnd $signInsEnd -certificate $cert -appId $appId -tenant $tenant -logFile $logFile -outputFile $outputFile
                 }
             }
             else {

@@ -472,7 +472,9 @@ function Get-AzDevOpsAuditLogs {
         [Parameter(Mandatory = $true)]
         [String]$uri,
         [Parameter(Mandatory = $true)]
-        [String]$logFile
+        [String]$logFile,
+        [Parameter(Mandatory = $true)]
+        [String]$outputFile
     )
     try {
         $token = Get-AzAccessToken -ResourceUrl "499b84ac-1321-427f-aa17-267ca6975798" -AsSecureString:$false -ErrorAction Stop
@@ -562,7 +564,15 @@ function Get-AzDevOpsAuditLogs {
     else {
         "No events to dump from Azure DevOps URI $($uri)" | Write-Log -LogPath $logFile
     }
-    return $APIresults
+    
+    if ($APIresults){
+        $nbAPIresults = ($APIresults | Measure-Object).Count
+        "Dumping $($nbAPIresults) Azure DevOps activity logs events to $($outputFile)" | Write-Log -LogPath $logFile
+        $APIresults | ConvertTo-Json -Depth 99 | Out-File $outputFile -Encoding UTF8
+    }
+    else {
+        "No Azure DevOps activity logs event to dump to $($outputFile)" | Write-Log -LogPath $logFile -LogLevel "Warning"
+    }
 }
 
 function Get-MgPurviewAuditLog {
@@ -780,7 +790,9 @@ function Get-MicrosoftGraphLogs {
         [Parameter(Mandatory = $true)]
         [String]$tenant,
         [Parameter(Mandatory = $true)]
-        [String]$logFile
+        [String]$logFile,
+        [Parameter(Mandatory = $true)]
+        [String]$outputFile
     )
     $stopLoop = $false
     [Int]$retryCount = "0"
@@ -817,7 +829,14 @@ function Get-MicrosoftGraphLogs {
             }
         }
     } while ($stopLoop -eq $false)
-    return $AzureADEvents
+    if ($AzureADEvents -ne $null){
+        $AzureADEventsCount = ($AzureADEvents | Measure-Object).Count
+        "Dumping $($AzureADEventsCount) Entra ID $($type) events to $($outputFile)" | Write-Log -LogPath $logFile
+        $AzureADEvents | ConvertTo-Json -Depth 99 | Out-File $outputFile -Encoding UTF8
+    }
+    else {
+        "No Entra ID $($type) events to dump to $($outputFile)" | Write-Log -LogPath $logFile -LogLevel "Warning" 
+    }
 }
 
 function Get-AzureRMActivityLog {
@@ -838,7 +857,9 @@ function Get-AzureRMActivityLog {
         [Parameter(Mandatory = $true)]
         [String]$tenant,
         [Parameter(Mandatory = $true)]
-        [String]$logFile
+        [String]$logFile,
+        [Parameter(Mandatory = $true)]
+        [String]$outputFile
     )
     $stopLoop = $false
     [Int]$retryCount = "0"
@@ -862,7 +883,18 @@ function Get-AzureRMActivityLog {
             }
         }
     } while ($stopLoop -eq $false)
-    return $azureRMActivityEvents
+    if ($azureRMActivityEvents){
+        $nbAzureRMActivityEvents = ($azureRMActivityEvents | Measure-Object).Count
+        "Dumping $($nbAzureRMActivityEvents) Azure Resource Manager activity logs events to $($outputFile)" | Write-Log -LogPath $logFile
+        for ($i=0; $i -lt $nbAzureRMActivityEvents; $i++){
+            # we can't use ConvertTo-Json, cf. https://github.com/Azure/azure-powershell/issues/11353
+            $azureRMActivityEvents[$i] = [Newtonsoft.Json.JsonConvert]::SerializeObject($azureRMActivityEvents[$i])
+        }
+        $azureRMActivityEvents | Out-File $outputFile -Encoding UTF8
+    }
+    else {
+        "No Azure Resource Manager activity logs event to dump to $($outputFile)" | Write-Log -LogPath $logFile -LogLevel "Warning"
+    }
 }
 
 function Get-UnifiedAuditLogPurview {
