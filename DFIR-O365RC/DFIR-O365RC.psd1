@@ -7,7 +7,7 @@
     RootModule = '.\DFIR-O365RC.psm1'
 
     # Version number of this module.
-    ModuleVersion = '2.0.7'
+    ModuleVersion = '2.1.0'
 
     # Supported PSEditions
     CompatiblePSEditions = 'Core', 'Desktop'
@@ -35,9 +35,11 @@
         @{ModuleName = 'ExchangeOnlineManagement'; ModuleVersion = '3.5.1'; }
         @{ModuleName = 'Microsoft.Graph.Authentication'; ModuleVersion = '2.20.0'; }
         @{ModuleName = 'Microsoft.Graph.Applications'; ModuleVersion = '2.20.0'; }
+        @{ModuleName = 'Microsoft.Graph.Beta.Identity.SignIns'; ModuleVersion = '2.20.0'; }
         @{ModuleName = 'Microsoft.Graph.Beta.Reports'; ModuleVersion = '2.20.0'; }
         @{ModuleName = 'Microsoft.Graph.Beta.Security'; ModuleVersion = '2.20.0'; }
         @{ModuleName = 'Microsoft.Graph.Identity.DirectoryManagement'; ModuleVersion = '2.20.0'; }
+        @{ModuleName = 'Microsoft.Graph.Users'; ModuleVersion = '2.20.0'; }
         @{ModuleName = 'PoshRSJob'; ModuleVersion = '1.7.4.4'; }
     )
 
@@ -46,6 +48,7 @@
         'Get-AADApps.ps1',
         'Get-AADDevices.ps1',
         'Get-AADLogs.ps1',
+        'Get-AADUsers.ps1',
         'Get-AzDevOpsActivityLogs.ps1',
         'Get-AzRMActivityLogs.ps1',
         'Get-O365.ps1',
@@ -63,6 +66,7 @@
         'Get-AADApps',
         'Get-AADDevices',
         'Get-AADLogs',
+        'Get-AADUsers',
         'Get-AzDevOpsActivityLogs',
         'Get-AzDevOpsAuditLogs',
         'Get-AzDevOpsRestAPIResponseUser',
@@ -103,6 +107,7 @@
                 1.1.0 - Added Get-AADDevices and Get-AzRMActivityLogs functions
                 1.2.0 - Added Get-AzDevOpsActivityLogs function and added mailobx audit logs retrieval to the Search-O365 function
                 2.0.0 - Rework of the project: use of an application to do the log collection, instead of an authenticated user. Add Purview
+                2.1.0 - Add Get-AADUsers
             '
         } # End of PSData hashtable
     } # End of PrivateData hashtable

@@ -85,10 +85,12 @@
     $auditEnd = "{0:s}" -f $endDate + "Z"
     "Getting all service principal related events via Audit Log" | Write-Log -LogPath $logFile
     $servicePrincipalEvents = Get-MgBetaAuditLogDirectoryAudit -All -Filter "activityDateTime ge $($auditStart) and activityDateTime lt $($auditEnd) and (activityDisplayName eq 'Consent to application' or activityDisplayName eq 'Add app role assignment to service principal' or activityDisplayName eq 'Add delegated permission grant' or activityDisplayName eq 'Add service principal credentials' or activityDisplayName eq 'Add service principal' or activityDisplayName eq 'Add OAuth2PermissionGrant')" -ErrorAction Stop
+    if ($servicePrincipalEvents -ne $null){$servicePrincipalEvents = $servicePrincipalEvents.ToJsonString() | ConvertFrom-Json}
 
     # Get all service principals
     "Getting all service principals" | Write-Log -LogPath $logFile
     $allServicePrincipals = Get-MgServicePrincipal -All -ErrorAction Stop
+    if ($allServicePrincipals -ne $null){$allServicePrincipals = $allServicePrincipals.ToJsonString() | ConvertFrom-Json}
     $servicePrincipalsOutputFile = $folderToProcess + "\AADApps_" + $tenant + "_service_principals_raw.json"
     $allServicePrincipals | ConvertTo-Json -Depth 99 | Out-File $servicePrincipalsOutputFile -Encoding UTF8
 
@@ -104,11 +106,13 @@
         if ($servicePrincipalObject){
             "Getting OAuth2PermissionGrants for $($uniqueServicePrincipal.Name) Service Principal" | Write-Log -LogPath $logFile
             $servicePrincipalOAuth = Get-MgServicePrincipalOauth2PermissionGrant -ServicePrincipalId $($uniqueServicePrincipal.Name) -All -ErrorAction Stop
+            if ($servicePrincipalOAuth -ne $null){$servicePrincipalOAuth = $servicePrincipalOAuth.ToJsonString() | ConvertFrom-Json}
             $delegatedConsentAutorisations = (($servicePrincipalOAuth | Group-Object -Property Scope).Name) -join ","
             $delegatedConsentTypes = (($servicePrincipalOAuth | Group-Object -Property ConsentType).Name) -join ","
 
             "Getting appRoleAssignments for $($uniqueServicePrincipal.Name) Service Principal" | Write-Log -LogPath $logFile
             $servicePrincipalAppRoleAssignement = Get-MgServicePrincipalAppRoleAssignment -ServicePrincipalId $($uniqueServicePrincipal.Name) -All -ErrorAction Stop
+            if ($servicePrincipalAppRoleAssignement -ne $null){$servicePrincipalAppRoleAssignement = $servicePrincipalAppRoleAssignement.ToJsonString() | ConvertFrom-Json}
             $appRoleIdAssignements = (($servicePrincipalAppRoleAssignement | Group-Object -Property AppRoleId).Name) -join ","
 
             if (-not ($null -eq $appRoleIdAssignements)){$eventsPerServicePrincipal | Add-Member -MemberType NoteProperty -Name "servicePrincipal_appRoleIdAssignements" -Value $appRoleIdAssignements -Force}
@@ -136,16 +140,19 @@
     $auditEnd = "{0:s}" -f $endDate + "Z"
 
     $appEvents = Get-MgBetaAuditLogDirectoryAudit -All -Filter "activityDateTime ge $($auditStart) and activityDateTime lt $($auditEnd) and (activityDisplayName eq 'Add application' or startswith(activityDisplayName, 'Update application'))" -ErrorAction Stop
+    if ($appEvents -ne $null){$appEvents = $appEvents.ToJsonString() | ConvertFrom-Json}
 
     # Get all applications
     "Getting all existing applications" | Write-Log -LogPath $logFile
     $existingApplications = Get-MgApplication -All -ErrorAction Stop
+    if ($existingApplications -ne $null){$existingApplications = $existingApplications.ToJsonString() | ConvertFrom-Json}
     $existingApplicationsOutputFile = $folderToProcess + "\AADApps_" + $tenant + "_existing_applications_raw.json"
     $existingApplications | ConvertTo-Json -Depth 99 | Out-File $existingApplicationsOutputFile -Encoding UTF8
 
     # Get all deleted applications
     "Getting all deleted applications" | Write-Log -LogPath $logFile
     $deletedApplications = Get-MgDirectoryDeletedItemAsApplication -All -ErrorAction Stop
+    if ($deletedApplications -ne $null){$deletedApplications = $deletedApplications.ToJsonString() | ConvertFrom-Json}
     $deletedApplicationsOutputFile = $folderToProcess + "\AADApps_" + $tenant + "_deleted_applications_raw.json"
     $deletedApplications | ConvertTo-Json -Depth 99 | Out-File $deletedApplicationsOutputFile -Encoding UTF8
 
