@@ -115,15 +115,28 @@
 
         if ($servicePrincipalObject){
             "Getting OAuth2PermissionGrants for $($uniqueServicePrincipal.Name) Service Principal" | Write-Log -LogPath $logFile
-            $servicePrincipalOAuth = Get-MgServicePrincipalOauth2PermissionGrant -ServicePrincipalId $($uniqueServicePrincipal.Name) -All -ErrorAction Stop
-            if ($servicePrincipalOAuth -ne $null){$servicePrincipalOAuth = $servicePrincipalOAuth.ToJsonString() | ConvertFrom-Json}
-            $delegatedConsentAutorisations = (($servicePrincipalOAuth | Group-Object -Property Scope).Name) -join ","
-            $delegatedConsentTypes = (($servicePrincipalOAuth | Group-Object -Property ConsentType).Name) -join ","
+            try {
+                $servicePrincipalOAuth = Get-MgServicePrincipalOauth2PermissionGrant -ServicePrincipalId $($uniqueServicePrincipal.Name) -All -ErrorAction Stop
+                if ($servicePrincipalOAuth -ne $null){$servicePrincipalOAuth = $servicePrincipalOAuth.ToJsonString() | ConvertFrom-Json}
+                $delegatedConsentAutorisations = (($servicePrincipalOAuth | Group-Object -Property Scope).Name) -join ","
+                $delegatedConsentTypes = (($servicePrincipalOAuth | Group-Object -Property ConsentType).Name) -join ","
+            }
+            catch {
+                "No OAuth2PermissionGrants for (deleted) $($uniqueServicePrincipal.Name) Service Principal" | Write-Log -LogPath $logFile -LogLevel "Warning"
+                $delegatedConsentAutorisations = $null
+                $delegatedConsentTypes = $null
+            }
 
             "Getting appRoleAssignments for $($uniqueServicePrincipal.Name) Service Principal" | Write-Log -LogPath $logFile
-            $servicePrincipalAppRoleAssignement = Get-MgServicePrincipalAppRoleAssignment -ServicePrincipalId $($uniqueServicePrincipal.Name) -All -ErrorAction Stop
-            if ($servicePrincipalAppRoleAssignement -ne $null){$servicePrincipalAppRoleAssignement = $servicePrincipalAppRoleAssignement.ToJsonString() | ConvertFrom-Json}
-            $appRoleIdAssignements = (($servicePrincipalAppRoleAssignement | Group-Object -Property AppRoleId).Name) -join ","
+            try {
+                $servicePrincipalAppRoleAssignement = Get-MgServicePrincipalAppRoleAssignment -ServicePrincipalId $($uniqueServicePrincipal.Name) -All -ErrorAction Stop
+                if ($servicePrincipalAppRoleAssignement -ne $null){$servicePrincipalAppRoleAssignement = $servicePrincipalAppRoleAssignement.ToJsonString() | ConvertFrom-Json}
+                $appRoleIdAssignements = (($servicePrincipalAppRoleAssignement | Group-Object -Property AppRoleId).Name) -join ","
+            }
+            catch {
+                "No appRoleAssignments for (deleted) $($uniqueServicePrincipal.Name) Service Principal" | Write-Log -LogPath $logFile -LogLevel "Warning"
+                $appRoleIdAssignements = $null
+            }
 
             if (-not ($null -eq $appRoleIdAssignements)){$eventsPerServicePrincipal | Add-Member -MemberType NoteProperty -Name "servicePrincipal_appRoleIdAssignements" -Value $appRoleIdAssignements -Force}
             if (-not ($null -eq $delegatedConsentAutorisations)){$eventsPerServicePrincipal | Add-Member -MemberType NoteProperty -Name "servicePrincipal_delegatedConsentAutorisations" -Value $delegatedConsentAutorisations -Force}
