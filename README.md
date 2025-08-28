@@ -183,6 +183,10 @@ Once the application is created, you can still, using the `Update-Application` c
 
   `Update-Application -organizations`
 
+- You can update the permissions of the application, which is especially useful if you have an old application and the permissions have been updated since you created it:
+
+  `Update-Application -permissions`
+
 ### Removing the application
 
 Once you are done with the log collection you can delete the application using the `Remove-Application` cmdlet from the module.

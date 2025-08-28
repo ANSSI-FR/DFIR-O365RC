@@ -295,6 +295,9 @@ function Update-Application {
     PS C:\>$certificateb64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes("example.der"))
     PS C:\>Update-Application -certificateb64 $certificateb64 -organizations -subscriptions
     Update the application to add a certificate ("example.der") and access to Azure DevOps organizations and Azure Resource Manager subscriptions.
+    
+    PS C:\>Update-Application -permissions
+    Update the application to add required Entra ID permissions.
     #>
     
     param (
@@ -304,6 +307,8 @@ function Update-Application {
         [Switch]$subscriptions,
         [Parameter(Mandatory = $false)]
         [Switch]$organizations,
+        [Parameter(Mandatory = $false)]
+        [Switch]$permissions,
         [String]$logFile = "Update-Application.log"
     )
 
@@ -367,6 +372,13 @@ function Update-Application {
                     }
                     if ($organizations){
                         Add-OrganizationPermissions -servicePrincipalId $alreadyExistingServicePrincipalCheck.Id -logFile $logFile
+                    }
+                    if ($permissions){
+                        $graphRequiredAccess = Get-EntraIDPermissions -logFile $logFile
+                        Write-Host "Updating permissions for $applicationName"
+                        "Updating permissions for $applicationName" | Write-Log -LogPath $logFile
+                        Update-MgApplication -ApplicationId $alreadyExistingAppCheck.Id -RequiredResourceAccess $graphRequiredAccess
+                        Wait-AdminConsent -appId $alreadyExistingAppCheck.AppId -servicePrincipalId $alreadyExistingServicePrincipalCheck.Id -logFile $logFile
                     }
                 }
             }
