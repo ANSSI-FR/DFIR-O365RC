@@ -1,3 +1,102 @@
+function Get-EntraIDPermissions {
+    <#
+    .SYNOPSIS
+    The Get-EntraIDPermissions function is the inner function that handles getting Entra ID permissions
+    #>
+
+    param (
+        [String]$logFile = "Get-EntraIDPermissions.log"
+    )
+
+    "Getting Entra ID permissions 'AuditLog.Read.All', 'AuditLogsQuery.Read.All', 'Application.Read.All', 'DelegatedPermissionGrant.Read.All', 'Device.Read.All', 'User.Read.all', 'UserAuthenticationMethod.Read.All' and 'Organization.Read.All' for 'Microsoft Graph'" | Write-Log -LogPath $logFile
+    $graphApi = (Get-MgServicePrincipal -Filter "AppID eq '00000003-0000-0000-c000-000000000000'" -ErrorAction Stop)
+    if ($graphApi -eq $null){
+        return $null
+    }
+    $graphAuditLogReadAll = $graphApi.AppRoles | Where-Object { $_.Value -eq 'AuditLog.Read.All' }
+    $graphAuditLogsQueryReadAll = $graphApi.AppRoles | Where-Object { $_.Value -eq 'AuditLogsQuery.Read.All' }
+    $graphApplicationReadAll = $graphApi.AppRoles | Where-Object { $_.Value -eq 'Application.Read.All' }
+    $graphDelegatedPermissionGrandReadAll = $graphApi.AppRoles | Where-Object { $_.Value -eq 'DelegatedPermissionGrant.Read.All' }
+    $graphDeviceReadAll = $graphApi.AppRoles | Where-Object { $_.Value -eq 'Device.Read.All' }
+    $graphUserReadAll = $graphApi.AppRoles | Where-Object { $_.Value -eq 'User.Read.All' }
+    $graphUserAuthenticationMethodReadAll = $graphApi.AppRoles | Where-Object { $_.Value -eq 'UserAuthenticationMethod.Read.All' }
+    $graphOrganizationReadAll = $graphApi.AppRoles | Where-Object { $_.Value -eq 'Organization.Read.All' }
+    $graphRequiredAccess = @{
+        ResourceAppId = $graphApi.AppId ;
+        ResourceAccess = @(
+            @{
+                Id = $graphAuditLogReadAll.Id ;
+                Type = "Role"
+            },
+            @{
+                Id = $graphAuditLogsQueryReadAll.Id ;
+                Type = "Role"
+            },
+            @{
+                Id = $graphApplicationReadAll.Id ;
+                Type = "Role"
+            },
+            @{
+                Id = $graphDelegatedPermissionGrandReadAll.Id ;
+                Type = "Role"
+            },
+            @{
+                Id = $graphUserReadAll.Id ;
+                Type = "Role"
+            },
+            @{
+                Id = $graphUserAuthenticationMethodReadAll.Id ;
+                Type = "Role"
+            },
+            @{
+                Id = $graphDeviceReadAll.Id ;
+                Type = "Role"
+            },
+            @{
+                Id = $graphOrganizationReadAll.Id ;
+                Type = "Role"
+            }
+        )
+    }
+    return $graphRequiredAccess
+}
+
+function Wait-AdminConsent {
+    <#
+    .SYNOPSIS
+    The Wait-AdminConsent function is the inner function which will wait for the admin consent
+    #>
+
+    param (
+        [Parameter(Mandatory = $true)]
+        [String]$appId,
+        [Parameter(Mandatory = $true)]
+        [String]$servicePrincipalId,
+        [String]$logFile = "Wait-AdminConsent.log"
+    )
+    
+    $tenantID = (Get-MgOrganization -ErrorAction Stop).Id
+    Write-Host "Sleeping 30 seconds for the application to be correctly deployed / updated"
+    Start-Sleep -Seconds 30
+    $consentURL = "https://login.microsoftonline.com/$tenantID/adminconsent?client_id=$($appId)"
+    Write-Warning "Please use a web browser to open the page $consentURL and do an admin consent for the application (error AADSTS500113 is expected after the consent)"
+    "Displaying the URI for the admin consent" | Write-Log -LogPath $logFile
+    $hasConsented = $False
+    $graphRequiredAccess = Get-EntraIDPermissions -logFile $logFile
+    $graphRequiredAccessIds = $graphRequiredAccess.ResourceAccess | Select-Object -ExpandProperty Id | sort
+    while (-not $hasConsented){
+        $roleAssignements = Get-MgServicePrincipalAppRoleAssignment -ServicePrincipalId $servicePrincipalId
+        if ($roleAssignements){
+            $roleAssignementsIds = $roleAssignements | Select-Object -ExpandProperty AppRoleId | sort
+            $IdsDiff = $graphRequiredAccessIds | Where {$roleAssignementsIds -NotContains $_}
+            if ($IdsDiff -eq $null){
+                $hasConsented = $true
+            }
+        }
+        Start-Sleep -Seconds 1
+    }
+}
+
 function Add-OrganizationPermissions {
 
     <#
@@ -190,11 +289,11 @@ function Update-Application {
     .EXAMPLE
 
     PS C:\>$certificateb64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes("example.der"))
-    PS C:\>New-Application -certificateb64 $certificateb64
+    PS C:\>Update-Application -certificateb64 $certificateb64
     Update the application to add a certificate ("example.der").
 
     PS C:\>$certificateb64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes("example.der"))
-    PS C:\>New-Application -certificateb64 $certificateb64 -organizations -subscriptions
+    PS C:\>Update-Application -certificateb64 $certificateb64 -organizations -subscriptions
     Update the application to add a certificate ("example.der") and access to Azure DevOps organizations and Azure Resource Manager subscriptions.
     #>
     
@@ -215,14 +314,14 @@ function Update-Application {
 
     Write-Host "Check for already existing DFIR-O365 applications"
     "Check for already existing DFIR-O365 applications" | Write-Log -LogPath $logFile
-    $alreadyExistingCheck = Get-MgApplication -Filter "startswith(DisplayName,'LogCollectionDFIRO365RC_')" -ErrorAction Stop
-    if ($alreadyExistingCheck){
-        if ($alreadyExistingCheck.length -gt 1){
-            Write-Error $alreadyExistingCheck.length + " LogCollectionDFIRO365RC applications are present. Please delete all but one existing applications"
-            $alreadyExistingCheck.length + " LogCollectionDFIRO365RC applications are present" | Write-Log -LogPath $logFile -LogLevel Error
+    $alreadyExistingAppCheck = Get-MgApplication -Filter "startswith(DisplayName,'LogCollectionDFIRO365RC_')" -ErrorAction Stop
+    if ($alreadyExistingAppCheck){
+        if ($alreadyExistingAppCheck.length -gt 1){
+            Write-Error $alreadyExistingAppCheck.length + " LogCollectionDFIRO365RC applications are present. Please delete all but one existing applications"
+            $alreadyExistingAppCheck.length + " LogCollectionDFIRO365RC applications are present" | Write-Log -LogPath $logFile -LogLevel Error
         }
         else {
-            $applicationName = "$($alreadyExistingCheck.DisplayName)"
+            $applicationName = "$($alreadyExistingAppCheck.DisplayName)"
             Write-Host "A LogCollectionDFIRO365RC application already exists: $applicationName"
             "A LogCollectionDFIRO365RC application already exists: $applicationName" | Write-Log -LogPath $logFile
             if ("" -ne $certificateb64){
@@ -243,8 +342,8 @@ function Update-Application {
                             endDateTime = $X509certificate.NotAfter;
                             displayName = $(New-Guid).Guid;
                         }
-                        $alreadyExistingCheck.KeyCredentials += $keyCreds
-                        Update-MgApplication -ApplicationId $alreadyExistingCheck.Id -KeyCredentials $alreadyExistingCheck.KeyCredentials
+                        $alreadyExistingAppCheck.KeyCredentials += $keyCreds
+                        Update-MgApplication -ApplicationId $alreadyExistingAppCheck.Id -KeyCredentials $alreadyExistingAppCheck.KeyCredentials
                     }
                     catch {
                         Write-Warning "Error loading and adding the new certificate. - $($_.Exception.Message)"
@@ -256,18 +355,18 @@ function Update-Application {
                     "Not adding the provided certificate to the existing application" | Write-Log -LogPath $logFile -LogLevel Warning
                 }
             }
-            $alreadyExistingCheck = Get-MgServicePrincipal -ErrorAction Stop | Where-Object { $_.DisplayName.StartsWith("LogCollectionDFIRO365RC_") }
-            if ($alreadyExistingCheck){
-                if ($alreadyExistingCheck.length -gt 1){
-                    Write-Warning $alreadyExistingCheck.length + " LogCollectionDFIRO365RC_ service principals are present. Please delete all but one existing service principals"
-                    $alreadyExistingCheck.length + " LogCollectionDFIRO365RC_ service principals are present" | Write-Log -LogPath $logFile -LogLevel Warning
+            $alreadyExistingServicePrincipalCheck = Get-MgServicePrincipal -ErrorAction Stop | Where-Object { $_.DisplayName.StartsWith("LogCollectionDFIRO365RC_") }
+            if ($alreadyExistingServicePrincipalCheck){
+                if ($alreadyExistingServicePrincipalCheck.length -gt 1){
+                    Write-Warning $alreadyExistingServicePrincipalCheck.length + " LogCollectionDFIRO365RC_ service principals are present. Please delete all but one existing service principals"
+                    $alreadyExistingServicePrincipalCheck.length + " LogCollectionDFIRO365RC_ service principals are present" | Write-Log -LogPath $logFile -LogLevel Warning
                 }
                 else {
                     if ($subscriptions){
-                        Add-SubscriptionPermissions -servicePrincipalId $alreadyExistingCheck.Id -logFile $logFile
+                        Add-SubscriptionPermissions -servicePrincipalId $alreadyExistingServicePrincipalCheck.Id -logFile $logFile
                     }
                     if ($organizations){
-                        Add-OrganizationPermissions -servicePrincipalId $alreadyExistingCheck.Id -logFile $logFile
+                        Add-OrganizationPermissions -servicePrincipalId $alreadyExistingServicePrincipalCheck.Id -logFile $logFile
                     }
                 }
             }
@@ -337,63 +436,18 @@ function New-Application {
                 }
             )
         }
-        "Getting Entra ID permissions 'AuditLog.Read.All', 'AuditLogsQuery.Read.All', 'Application.Read.All', 'DelegatedPermissionGrant.Read.All', Device.Read.All' and 'Organization.Read.All' for 'Microsoft Graph'" | Write-Log -LogPath $logFile
-        $graphApi = (Get-MgServicePrincipal -Filter "AppID eq '00000003-0000-0000-c000-000000000000'" -ErrorAction Stop)
-        $graphAuditLogReadAll = $graphApi.AppRoles | Where-Object { $_.Value -eq 'AuditLog.Read.All' }
-        $graphAuditLogsQueryReadAll = $graphApi.AppRoles | Where-Object { $_.Value -eq 'AuditLogsQuery.Read.All' }
-        $graphApplicationReadAll = $graphApi.AppRoles | Where-Object { $_.Value -eq 'Application.Read.All' }
-        $graphDelegatedPermissionGrandReadAll = $graphApi.AppRoles | Where-Object { $_.Value -eq 'DelegatedPermissionGrant.Read.All' }
-        $graphDeviceReadAll = $graphApi.AppRoles | Where-Object { $_.Value -eq 'Device.Read.All' }
-        $graphUserReadAll = $graphApi.AppRoles | Where-Object { $_.Value -eq 'User.Read.All' }
-        $graphUserAuthenticationMethodReadAll = $graphApi.AppRoles | Where-Object { $_.Value -eq 'UserAuthenticationMethod.Read.All' }
-        $graphOrganizationReadAll = $graphApi.AppRoles | Where-Object { $_.Value -eq 'Organization.Read.All' }
-        $graphRequiredAccess = @{
-            ResourceAppId = $graphApi.AppId ;
-            ResourceAccess = @(
-                @{
-                    Id = $graphAuditLogReadAll.Id ;
-                    Type = "Role"
-                },
-                @{
-                    Id = $graphAuditLogsQueryReadAll.Id ;
-                    Type = "Role"
-                },
-                @{
-                    Id = $graphApplicationReadAll.Id ;
-                    Type = "Role"
-                },
-                @{
-                    Id = $graphDelegatedPermissionGrandReadAll.Id ;
-                    Type = "Role"
-                },
-                @{
-                    Id = $graphUserReadAll.Id ;
-                    Type = "Role"
-                },
-                @{
-                    Id = $graphUserAuthenticationMethodReadAll.Id ;
-                    Type = "Role"
-                },
-                @{
-                    Id = $graphDeviceReadAll.Id ;
-                    Type = "Role"
-                },
-                @{
-                    Id = $graphOrganizationReadAll.Id ;
-                    Type = "Role"
-                }
-            )
-        }
 
         if ($null -eq $exchangeApi){
             Write-Warning "Application 'Office 365 Exchange Online' could not be found in your tenant. You won't be able to use the Get-O365' functions"
             "Application 'Office 365 Exchange Online' could not be found in your tenant. You won't be able to use the Get-O365' functions" | Write-Log -LogPath $logFile -LogLevel Warning
         }
 
+        $graphRequiredAccess = Get-EntraIDPermissions -logFile $logFile
+
         Write-Host "Creating application $applicationName with the required permissions"
         "Creating application $applicationName with the required permissions" | Write-Log -LogPath $logFile
         if ($null -eq $exchangeApi){
-            if ($null -ne $graphApi){
+            if ($null -ne $graphRequiredAccess){
                 $myApp = New-MgApplication -DisplayName $applicationName -RequiredResourceAccess $graphRequiredAccess -ErrorAction Stop
             }
             else {
@@ -401,7 +455,7 @@ function New-Application {
             }
         }
         else {
-            if ($null -ne $graphApi){
+            if ($null -ne $graphRequiredAccess){
                 $myApp = New-MgApplication -DisplayName $applicationName -RequiredResourceAccess $exchangeRequiredAccess,$graphRequiredAccess -ErrorAction Stop
             }
             else {
@@ -434,35 +488,7 @@ function New-Application {
             "Error loading and adding the certificate. The application will be created, but you will need to call Update-Certificate to add the certificate to the application (or do it using the GUI). - $($_.Exception.Message)" | Write-Log -LogPath $logFile -LogLevel Warning
         }
 
-        $tenantID = (Get-MgOrganization -ErrorAction Stop).Id
-        Write-Host "Sleeping 30 seconds for the application to be correctly deployed"
-        Start-Sleep -Seconds 30
-        $consentURL = "https://login.microsoftonline.com/$tenantID/adminconsent?client_id=$($myApp.AppId)"
-        Write-Warning "Please use a web browser to open the page $consentURL and do an admin consent for the application (error AADSTS500113 is expected after the consent)"
-        "Displaying the URI for the admin consent" | Write-Log -LogPath $logFile
-        $hasConsented = $False
-        while (-not $hasConsented){
-            $roleAssignements = Get-MgServicePrincipalAppRoleAssignment -ServicePrincipalId $mySP.Id
-            if ($roleAssignements){
-                if ($roleAssignements.length -gt 1){
-                    foreach ($roleAssignement in $roleAssignements){
-                        if ($roleAssignement.AppRoleId -eq $graphAuditLogReadAll.Id){
-                            Write-Host "Admin consent: done"
-                            "Admin consent: done" | Write-Log -LogPath $logFile
-                            $hasConsented = $True
-                        }
-                    }
-                }
-                else {
-                    if ($roleAssignements.AppRoleId -eq $graphAuditLogReadAll.Id){
-                        Write-Host "Admin consent: done"
-                        "Admin consent: done" | Write-Log -LogPath $logFile
-                        $hasConsented = $True
-                    }
-                }
-            }
-            Start-Sleep -Seconds 1
-        }
+        Wait-AdminConsent -appId $myApp.AppId -servicePrincipalId $mySP.Id -logFile $logFile
 
         if ($subscriptions){
             Add-SubscriptionPermissions -servicePrincipalId $mySP.Id -logFile $logFile
