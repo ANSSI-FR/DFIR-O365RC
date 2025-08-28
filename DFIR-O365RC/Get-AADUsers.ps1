@@ -95,6 +95,7 @@ function Get-AADUsers {
         }
 
         if ($authenticationMethods){
+            "Getting $($user.UserPrincipalName) registered authentication methods" | Write-Log -LogPath $logFile
             # Check if user has registered authentication methods
             $registeredAuthenticationMethods = Get-MgBetaUserAuthenticationMethod -UserId $user.Id -All
             if ($registeredAuthenticationMethods){

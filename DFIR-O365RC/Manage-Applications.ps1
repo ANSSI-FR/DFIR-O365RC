@@ -367,6 +367,8 @@ function Update-Application {
                     $alreadyExistingServicePrincipalCheck.length + " LogCollectionDFIRO365RC_ service principals are present" | Write-Log -LogPath $logFile -LogLevel Warning
                 }
                 else {
+                    Write-Host "A LogCollectionDFIRO365RC service principal already exists: $($alreadyExistingServicePrincipalCheck.Id)"
+                    "A LogCollectionDFIRO365RC service principal already exists: $($alreadyExistingServicePrincipalCheck.Id)" | Write-Log -LogPath $logFile
                     if ($subscriptions){
                         Add-SubscriptionPermissions -servicePrincipalId $alreadyExistingServicePrincipalCheck.Id -logFile $logFile
                     }
@@ -381,6 +383,10 @@ function Update-Application {
                         Wait-AdminConsent -appId $alreadyExistingAppCheck.AppId -servicePrincipalId $alreadyExistingServicePrincipalCheck.Id -logFile $logFile
                     }
                 }
+            }
+            else {
+                Write-Error "No service principal was found. Please call New-Application to create an application instead"
+                "No service principal was found. Please call New-Application to create an application instead" | Write-Log -LogPath $logFile -LogLevel Error
             }
         }
     }

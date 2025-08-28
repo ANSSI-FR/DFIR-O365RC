@@ -7,7 +7,7 @@
     RootModule = '.\DFIR-O365RC.psm1'
 
     # Version number of this module.
-    ModuleVersion = '2.3.0'
+    ModuleVersion = '2.3.1'
 
     # Supported PSEditions
     CompatiblePSEditions = 'Core', 'Desktop'
@@ -111,7 +111,7 @@
                 2.2.0 - Get Purview results using Graph instead of PowerShell. Use ToJsonString() to fix case. Recover deleted items
                 2.2.1 - Fix PSGallery CI
                 2.2.1 - Files are now written in the function where they are collected. This will change case somehow.
-                2.3.0 - Add Update-Application -permissions. Minor fixes. Bump dependencies
+                2.3.1 - Add Update-Application -permissions. Minor fixes. Bump dependencies. Better logging
             '
         } # End of PSData hashtable
     } # End of PrivateData hashtable
