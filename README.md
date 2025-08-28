@@ -216,6 +216,8 @@ The application will be created with the least possible required permission set:
 - `AuditLogsQuery.Read.All` for the `Microsoft Graph` API (required for Unified Audit Log collection using Purview)
 - `Application.Read.All` and `DelegatedPermissionGrant.Read.All` for the `Microsoft Graph` API (required for the enrichment of Microsoft Entra logs related to applications and service principals)
 - `Device.Read.All` for the `Microsoft Graph` API (required for the enrichment of Microsoft Entra logs related to devices)
+- `User.Read.All` for the `Microsoft Graph` API (required for getting information on the users)
+- `UserAuthenticationMethod.Read.All` for the `Microsoft Graph` API (required for getting information on the users' authentication methods)
 - `Organization.Read.All` for the `Microsoft Graph` API (required for getting general information on the tenant)
 - `View-only audit logs` in `Exchange Online` (required to use the `Search-UnifiedAuditLog` cmdlet)
 

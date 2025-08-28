@@ -1,16 +1,16 @@
 FROM mcr.microsoft.com/powershell:latest
 RUN pwsh -command Set-PSRepository PSGallery -InstallationPolicy Trusted
-RUN pwsh -command Install-Module -Name Az.Accounts -RequiredVersion 3.0.2
-RUN pwsh -command Install-Module -Name Az.Monitor -RequiredVersion 5.2.1
-RUN pwsh -command Install-Module -Name Az.Resources -RequiredVersion 7.2.0
-RUN pwsh -command Install-Module -Name ExchangeOnlineManagement -RequiredVersion 3.5.1
-RUN pwsh -command Install-Module -Name Microsoft.Graph.Authentication -RequiredVersion 2.20.0
-RUN pwsh -command Install-Module -Name Microsoft.Graph.Applications -RequiredVersion 2.20.0
-RUN pwsh -command Install-Module -Name Microsoft.Graph.Beta.Identity.SignIns -RequiredVersion 2.20.0
-RUN pwsh -command Install-Module -Name Microsoft.Graph.Beta.Reports -RequiredVersion 2.20.0
-RUN pwsh -command Install-Module -Name Microsoft.Graph.Beta.Security -RequiredVersion 2.20.0
-RUN pwsh -command Install-Module -Name Microsoft.Graph.Identity.DirectoryManagement -RequiredVersion 2.20.0
-RUN pwsh -command Install-Module -Name Microsoft.Graph.Users -RequiredVersion 2.20.0
+RUN pwsh -command Install-Module -Name Az.Accounts -RequiredVersion 5.2.0
+RUN pwsh -command Install-Module -Name Az.Monitor -RequiredVersion 6.0.3
+RUN pwsh -command Install-Module -Name Az.Resources -RequiredVersion 8.1.0
+RUN pwsh -command Install-Module -Name ExchangeOnlineManagement -RequiredVersion 3.9.0
+RUN pwsh -command Install-Module -Name Microsoft.Graph.Authentication -RequiredVersion 2.30.0
+RUN pwsh -command Install-Module -Name Microsoft.Graph.Applications -RequiredVersion 2.30.0
+RUN pwsh -command Install-Module -Name Microsoft.Graph.Beta.Identity.SignIns -RequiredVersion 2.30.0
+RUN pwsh -command Install-Module -Name Microsoft.Graph.Beta.Reports -RequiredVersion 2.30.0
+RUN pwsh -command Install-Module -Name Microsoft.Graph.Beta.Security -RequiredVersion 2.30.0
+RUN pwsh -command Install-Module -Name Microsoft.Graph.Identity.DirectoryManagement -RequiredVersion 2.30.0
+RUN pwsh -command Install-Module -Name Microsoft.Graph.Users -RequiredVersion 2.30.0
 #RUN pwsh -command Install-Module -Name PoshRSJob -RequiredVersion 1.7.4.4
 RUN pwsh -command mkdir /tmp/posh
 RUN pwsh -command Invoke-WebRequest -UseBasicParsing -Uri 'https://www.powershellgallery.com/api/v2/package/PoshRSJob/1.7.4.4' -OutFile '/tmp/posh/PoshRSJob.1.7.4.4.nupkg'

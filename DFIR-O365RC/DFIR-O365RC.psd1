@@ -7,7 +7,7 @@
     RootModule = '.\DFIR-O365RC.psm1'
 
     # Version number of this module.
-    ModuleVersion = '2.2.2'
+    ModuleVersion = '2.3.0'
 
     # Supported PSEditions
     CompatiblePSEditions = 'Core', 'Desktop'
@@ -29,17 +29,17 @@
 
     # Modules that must be imported into the global environment prior to importing this module
     RequiredModules = @(
-        @{ModuleName = 'Az.Accounts'; ModuleVersion = '3.0.2'; }
-        @{ModuleName = 'Az.Monitor'; ModuleVersion = '5.2.1'; }
-        @{ModuleName = 'Az.Resources'; ModuleVersion = '7.2.0'; }
-        @{ModuleName = 'ExchangeOnlineManagement'; ModuleVersion = '3.5.1'; }
-        @{ModuleName = 'Microsoft.Graph.Authentication'; ModuleVersion = '2.20.0'; }
-        @{ModuleName = 'Microsoft.Graph.Applications'; ModuleVersion = '2.20.0'; }
-        @{ModuleName = 'Microsoft.Graph.Beta.Identity.SignIns'; ModuleVersion = '2.20.0'; }
-        @{ModuleName = 'Microsoft.Graph.Beta.Reports'; ModuleVersion = '2.20.0'; }
-        @{ModuleName = 'Microsoft.Graph.Beta.Security'; ModuleVersion = '2.20.0'; }
-        @{ModuleName = 'Microsoft.Graph.Identity.DirectoryManagement'; ModuleVersion = '2.20.0'; }
-        @{ModuleName = 'Microsoft.Graph.Users'; ModuleVersion = '2.20.0'; }
+        @{ModuleName = 'Az.Accounts'; ModuleVersion = '5.2.0'; }
+        @{ModuleName = 'Az.Monitor'; ModuleVersion = '6.0.3'; }
+        @{ModuleName = 'Az.Resources'; ModuleVersion = '8.1.0'; }
+        @{ModuleName = 'ExchangeOnlineManagement'; ModuleVersion = '3.9.0'; }
+        @{ModuleName = 'Microsoft.Graph.Authentication'; ModuleVersion = '2.30.0'; }
+        @{ModuleName = 'Microsoft.Graph.Applications'; ModuleVersion = '2.30.0'; }
+        @{ModuleName = 'Microsoft.Graph.Beta.Identity.SignIns'; ModuleVersion = '2.30.0'; }
+        @{ModuleName = 'Microsoft.Graph.Beta.Reports'; ModuleVersion = '2.30.0'; }
+        @{ModuleName = 'Microsoft.Graph.Beta.Security'; ModuleVersion = '2.30.0'; }
+        @{ModuleName = 'Microsoft.Graph.Identity.DirectoryManagement'; ModuleVersion = '2.30.0'; }
+        @{ModuleName = 'Microsoft.Graph.Users'; ModuleVersion = '2.30.0'; }
         @{ModuleName = 'PoshRSJob'; ModuleVersion = '1.7.4.4'; }
     )
 
@@ -111,6 +111,7 @@
                 2.2.0 - Get Purview results using Graph instead of PowerShell. Use ToJsonString() to fix case. Recover deleted items
                 2.2.1 - Fix PSGallery CI
                 2.2.1 - Files are now written in the function where they are collected. This will change case somehow.
+                2.3.0 - Add Update-Application -permissions. Minor fixes. Bump dependencies
             '
         } # End of PSData hashtable
     } # End of PrivateData hashtable
