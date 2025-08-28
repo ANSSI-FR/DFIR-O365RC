@@ -9,7 +9,7 @@ function Get-EntraIDPermissions {
     )
 
     "Getting Entra ID permissions 'AuditLog.Read.All', 'AuditLogsQuery.Read.All', 'Application.Read.All', 'DelegatedPermissionGrant.Read.All', 'Device.Read.All', 'User.Read.all', 'UserAuthenticationMethod.Read.All' and 'Organization.Read.All' for 'Microsoft Graph'" | Write-Log -LogPath $logFile
-    $graphApi = (Get-MgServicePrincipal -Filter "AppID eq '00000003-0000-0000-c000-000000000000'" -ErrorAction Stop)
+    $graphApi = (Get-MgServicePrincipal -All -Filter "AppID eq '00000003-0000-0000-c000-000000000000'" -ErrorAction Stop)
     if ($graphApi -eq $null){
         return $null
     }
@@ -85,7 +85,7 @@ function Wait-AdminConsent {
     $graphRequiredAccess = Get-EntraIDPermissions -logFile $logFile
     $graphRequiredAccessIds = $graphRequiredAccess.ResourceAccess | Select-Object -ExpandProperty Id | sort
     while (-not $hasConsented){
-        $roleAssignements = Get-MgServicePrincipalAppRoleAssignment -ServicePrincipalId $servicePrincipalId
+        $roleAssignements = Get-MgServicePrincipalAppRoleAssignment -All -ServicePrincipalId $servicePrincipalId
         if ($roleAssignements){
             $roleAssignementsIds = $roleAssignements | Select-Object -ExpandProperty AppRoleId | sort
             $IdsDiff = $graphRequiredAccessIds | Where {$roleAssignementsIds -NotContains $_}
@@ -319,7 +319,7 @@ function Update-Application {
 
     Write-Host "Check for already existing DFIR-O365 applications"
     "Check for already existing DFIR-O365 applications" | Write-Log -LogPath $logFile
-    $alreadyExistingAppCheck = Get-MgApplication -Filter "startswith(DisplayName,'LogCollectionDFIRO365RC_')" -ErrorAction Stop
+    $alreadyExistingAppCheck = Get-MgApplication -All -Filter "startswith(DisplayName,'LogCollectionDFIRO365RC_')" -ErrorAction Stop
     if ($alreadyExistingAppCheck){
         if ($alreadyExistingAppCheck.length -gt 1){
             Write-Error $alreadyExistingAppCheck.length + " LogCollectionDFIRO365RC applications are present. Please delete all but one existing applications"
@@ -360,7 +360,7 @@ function Update-Application {
                     "Not adding the provided certificate to the existing application" | Write-Log -LogPath $logFile -LogLevel Warning
                 }
             }
-            $alreadyExistingServicePrincipalCheck = Get-MgServicePrincipal -ErrorAction Stop | Where-Object { $_.DisplayName.StartsWith("LogCollectionDFIRO365RC_") }
+            $alreadyExistingServicePrincipalCheck = Get-MgServicePrincipal -All -ErrorAction Stop | Where-Object { $_.DisplayName.StartsWith("LogCollectionDFIRO365RC_") }
             if ($alreadyExistingServicePrincipalCheck){
                 if ($alreadyExistingServicePrincipalCheck.length -gt 1){
                     Write-Warning $alreadyExistingServicePrincipalCheck.length + " LogCollectionDFIRO365RC_ service principals are present. Please delete all but one existing service principals"
@@ -430,14 +430,14 @@ function New-Application {
 
     Write-Host "Check for already existing DFIR-O365 applications"
     "Check for already existing CF66J756VDFIR-O365 applications" | Write-Log -LogPath $logFile
-    $alreadyExistingCheck = Get-MgApplication -Filter "startswith(DisplayName,'LogCollectionDFIRO365RC_')" -ErrorAction Stop
+    $alreadyExistingCheck = Get-MgApplication -All -Filter "startswith(DisplayName,'LogCollectionDFIRO365RC_')" -ErrorAction Stop
     if ($alreadyExistingCheck){
         Write-Error "A LogCollectionDFIRO365RC_* application already exists. Please call Update-Application instead"
         "A LogCollectionDFIRO365RC_* application already exists. Please call Update-Application instead" | Write-Log -LogPath $logFile -LogLevel Error
     }
     else {
         "Getting Entra ID permission 'Exchange.ManageAsApp' for 'Office 365 Exchange Online'" | Write-Log -LogPath $logFile
-        $exchangeApi = (Get-MgServicePrincipal -Filter "AppID eq '00000002-0000-0ff1-ce00-000000000000'" -ErrorAction Stop)
+        $exchangeApi = (Get-MgServicePrincipal -All -Filter "AppID eq '00000002-0000-0ff1-ce00-000000000000'" -ErrorAction Stop)
         $exchangeManageAsAppPermission = $exchangeApi.AppRoles | Where-Object { $_.Value -eq 'Exchange.ManageAsApp' }
         $exchangeRequiredAccess = @{
             ResourceAppId = $exchangeApi.AppId ;
@@ -580,7 +580,7 @@ function Remove-Application {
 
     Write-Host "Check for already existing DFIR-O365 applications"
     "Check for already existing DFIR-O365 applications" | Write-Log -LogPath $logFile
-    $alreadyExistingCheck = Get-MgApplication -Filter "startswith(DisplayName,'LogCollectionDFIRO365RC_')" -ErrorAction Stop
+    $alreadyExistingCheck = Get-MgApplication -All -Filter "startswith(DisplayName,'LogCollectionDFIRO365RC_')" -ErrorAction Stop
     if ($alreadyExistingCheck){
         if ($alreadyExistingCheck.length -gt 1){
             foreach ($application in $alreadyExistingCheck){
