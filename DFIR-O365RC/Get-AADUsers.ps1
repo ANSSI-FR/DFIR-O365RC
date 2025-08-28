@@ -63,10 +63,17 @@ function Get-AADUsers {
 
     # Get all users settings
     "Getting all users settings" | Write-Log -LogPath $logFile
-    $allUsersSettings = Get-MgBetaReportAuthenticationMethodUserRegistrationDetail -All -ErrorAction Stop
-    if ($allUsersSettings -ne $null){$allUsersSettings = $allUsersSettings.ToJsonString() | ConvertFrom-Json}
-    $usersSettingsOutputFile = $folderToProcess + "\AADUsers_" + $tenant + "_users_settings_raw.json"
-    $allUsersSettings | ConvertTo-Json -Depth 99 | Out-File $usersSettingsOutputFile -Encoding UTF8
+    try {
+        $allUsersSettings = Get-MgBetaReportAuthenticationMethodUserRegistrationDetail -All -ErrorAction Stop
+        if ($allUsersSettings -ne $null){$allUsersSettings = $allUsersSettings.ToJsonString() | ConvertFrom-Json}
+        $usersSettingsOutputFile = $folderToProcess + "\AADUsers_" + $tenant + "_users_settings_raw.json"
+        $allUsersSettings | ConvertTo-Json -Depth 99 | Out-File $usersSettingsOutputFile -Encoding UTF8
+    }
+    catch {
+        Write-Warning "Get-MgBetaReportAuthenticationMethodUserRegistrationDetail is a premium tenant feature. Please upgrade to Entra ID P1"
+        "Get-MgBetaReportAuthenticationMethodUserRegistrationDetail is a premium tenant feature. Please upgrade to Entra ID P1" | Write-Log -LogPath $logFile -LogLevel "Warning"
+        $allUsersSettings = $null
+    }
 
     $enrichedUsersObject = @()
 
