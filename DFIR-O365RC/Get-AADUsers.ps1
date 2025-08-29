@@ -48,7 +48,7 @@ function Get-AADUsers {
     # Get all users
     "Getting all users" | Write-Log -LogPath $logFile
     $allUsers = Get-MgUser -All -ErrorAction Stop
-    if ($allUsers -ne $null){$allUsers = $allUsers.ToJsonString() | ConvertFrom-Json}
+    if ($null -ne $allUsers){$allUsers = $allUsers.ToJsonString() | ConvertFrom-Json}
     $usersOutputFile = $folderToProcess + "\AADUsers_" + $tenant + "_users_raw.json"
     $allUsers | ConvertTo-Json -Depth 99 | Out-File $usersOutputFile -Encoding UTF8
     $countUsers = ($allUsers | Measure-Object).Count
@@ -57,7 +57,7 @@ function Get-AADUsers {
     # Get all deleted users
     "Getting all deleted users" | Write-Log -LogPath $logFile
     $deletedUsers = Get-MgDirectoryDeletedItemAsUser -All -ErrorAction Stop
-    if ($deletedUsers -ne $null){$deletedUsers = $deletedUsers.ToJsonString() | ConvertFrom-Json}
+    if ($null -ne $deletedUsers){$deletedUsers = $deletedUsers.ToJsonString() | ConvertFrom-Json}
     $deletedUsersOutputFile = $folderToProcess + "\AADUsers_" + $tenant + "_deleted_users_raw.json"
     $deletedUsers | ConvertTo-Json -Depth 99 | Out-File $deletedUsersOutputFile -Encoding UTF8
 
@@ -65,7 +65,7 @@ function Get-AADUsers {
     "Getting all users settings" | Write-Log -LogPath $logFile
     try {
         $allUsersSettings = Get-MgBetaReportAuthenticationMethodUserRegistrationDetail -All -ErrorAction Stop
-        if ($allUsersSettings -ne $null){$allUsersSettings = $allUsersSettings.ToJsonString() | ConvertFrom-Json}
+        if ($null -ne $allUsersSettings){$allUsersSettings = $allUsersSettings.ToJsonString() | ConvertFrom-Json}
         $usersSettingsOutputFile = $folderToProcess + "\AADUsers_" + $tenant + "_users_settings_raw.json"
         $allUsersSettings | ConvertTo-Json -Depth 99 | Out-File $usersSettingsOutputFile -Encoding UTF8
     }
@@ -99,7 +99,7 @@ function Get-AADUsers {
             # Check if user has registered authentication methods
             $registeredAuthenticationMethods = Get-MgBetaUserAuthenticationMethod -UserId $user.Id -All
             if ($registeredAuthenticationMethods){
-                if ($registeredAuthenticationMethods -ne $null){$registeredAuthenticationMethods = $registeredAuthenticationMethods.ToJsonString() | ConvertFrom-Json}
+                if ($null -ne $registeredAuthenticationMethods){$registeredAuthenticationMethods = $registeredAuthenticationMethods.ToJsonString() | ConvertFrom-Json}
                 $registeredAuthenticationMethods.PSObject.Properties | ForEach-Object {
                     $newPropertyName = "user_registered_authentication_methods_$($_.Name)"
                     if (-not ($user.PSObject.Properties.Name -contains $newPropertyName)){

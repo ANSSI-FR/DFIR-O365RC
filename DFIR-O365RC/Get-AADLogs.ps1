@@ -158,7 +158,7 @@ function Get-AADLogs {
     # Test the directory size
     $tenantSize = "normal"
     $tenantInformation = Get-MgOrganization -ErrorAction Stop
-    if ($tenantInformation -ne $null){$tenantInformation = $tenantInformation.ToJsonString() | ConvertFrom-Json}
+    if ($null -ne $tenantInformation){$tenantInformation = $tenantInformation.ToJsonString() | ConvertFrom-Json}
     if ($tenantInformation.AdditionalProperties.directorySizeQuota.used -ge 100000){
         $tenantSize = "huge"
         if ($dumpLogs -eq "all" -or $dumpLogs -eq "signInsOnly"){

@@ -605,7 +605,7 @@ function Get-MgPurviewAuditLog {
                 "Collected $($dumpCount) events" | Write-Log -LogPath $logFile -LogLevel "Info"
                 $outputFile = $baseOutputFile.split(".json")[0] + "_$iterator" + ".json"
                 $iterator = $iterator + 1
-                if ($data["@odata.nextLink"] -eq $null){
+                if ($null -eq $data["@odata.nextLink"]){
                     $stopLoop = $true
                 }
                 else {
@@ -641,7 +641,7 @@ function Get-MgPurviewAuditLog {
                 $retryCount = $retryCount + 1
             }
         }
-        if ($data.value -ne $null -and $data["@odata.count"] -eq ($data.value | Measure-Object).Count){
+        if ($null -ne $data.value -and $data["@odata.count"] -eq ($data.value | Measure-Object).Count){
             $data.value.auditData | ConvertTo-Json -Depth 99 | Out-File $outputFile -Encoding UTF8 -Append
         }
     }
@@ -809,7 +809,7 @@ function Get-MicrosoftGraphLogs {
             elseif ($type -eq "AuditLogs"){
                     $AzureADEvents = Get-MgBetaAuditLogDirectoryAudit -All -Filter "activityDateTime ge $($dateStart) and activityDateTime lt $($dateEnd)" -ErrorAction Stop
             }
-            if ($AzureADEvents -ne $null){$AzureADEvents = $AzureADEvents.ToJsonString() | ConvertFrom-Json}
+            if ($null -ne $AzureADEvents){$AzureADEvents = $AzureADEvents.ToJsonString() | ConvertFrom-Json}
             $stopLoop = $true
         }
         catch {
@@ -829,7 +829,7 @@ function Get-MicrosoftGraphLogs {
             }
         }
     } while ($stopLoop -eq $false)
-    if ($AzureADEvents -ne $null){
+    if ($null -ne $AzureADEvents){
         $AzureADEventsCount = ($AzureADEvents | Measure-Object).Count
         "Dumping $($AzureADEventsCount) Entra ID $($type) events to $($outputFile)" | Write-Log -LogPath $logFile
         $AzureADEvents | ConvertTo-Json -Depth 99 | Out-File $outputFile -Encoding UTF8

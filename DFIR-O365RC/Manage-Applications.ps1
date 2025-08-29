@@ -10,7 +10,7 @@ function Get-EntraIDPermissions {
 
     "Getting Entra ID permissions 'AuditLog.Read.All', 'AuditLogsQuery.Read.All', 'Application.Read.All', 'DelegatedPermissionGrant.Read.All', 'Device.Read.All', 'User.Read.all', 'UserAuthenticationMethod.Read.All' and 'Organization.Read.All' for 'Microsoft Graph'" | Write-Log -LogPath $logFile
     $graphApi = (Get-MgServicePrincipal -All -Filter "AppID eq '00000003-0000-0000-c000-000000000000'" -ErrorAction Stop)
-    if ($graphApi -eq $null){
+    if ($null -eq $graphApi){
         return $null
     }
     $graphAuditLogReadAll = $graphApi.AppRoles | Where-Object { $_.Value -eq 'AuditLog.Read.All' }
@@ -88,8 +88,8 @@ function Wait-AdminConsent {
         $roleAssignements = Get-MgServicePrincipalAppRoleAssignment -All -ServicePrincipalId $servicePrincipalId
         if ($roleAssignements){
             $roleAssignementsIds = $roleAssignements | Select-Object -ExpandProperty AppRoleId | sort
-            $IdsDiff = $graphRequiredAccessIds | Where {$roleAssignementsIds -NotContains $_}
-            if ($IdsDiff -eq $null){
+            $IdsDiff = $graphRequiredAccessIds | Where-Object {$roleAssignementsIds -NotContains $_}
+            if ($null -eq $IdsDiff){
                 $hasConsented = $true
             }
         }

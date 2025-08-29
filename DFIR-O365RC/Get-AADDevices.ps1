@@ -98,12 +98,12 @@
         "Getting all device related events via Audit Log" | Write-Log -LogPath $logFile
         $deviceEvents = Get-MgBetaAuditLogDirectoryAudit -All -Filter "activityDateTime ge $($auditStart) and activityDateTime lt $($auditEnd) and (activityDisplayName eq 'Add device' or activityDisplayName eq 'Device no longer compliant' or activityDisplayName eq 'Add registered users to device' or activityDisplayName eq 'Add registered owner to device' or activityDisplayName eq 'Delete device' or activityDisplayName eq 'Device no longer managed' or activityDisplayName eq 'Remove registered users from device' or activityDisplayName eq 'Remove registered owner from device' or activityDisplayName eq 'Update device')" -ErrorAction Stop
     }
-    if ($deviceEvents -ne $null){$deviceEvents = $deviceEvents.ToJsonString() | ConvertFrom-Json}
+    if ($null -ne $deviceEvents){$deviceEvents = $deviceEvents.ToJsonString() | ConvertFrom-Json}
 
     # Get all devices
     "Getting all devices" | Write-Log -LogPath $logFile
     $allDevices = Get-MgDevice -All -ErrorAction Stop
-    if ($allDevices -ne $null){$allDevices = $allDevices.ToJsonString() | ConvertFrom-Json}
+    if ($null -ne $allDevices){$allDevices = $allDevices.ToJsonString() | ConvertFrom-Json}
     $devicesOutputFile = $folderToProcess + "\AADDevices_" + $tenant + "_devices_raw.json"
     $allDevices | ConvertTo-Json -Depth 99 | Out-File $devicesOutputFile -Encoding UTF8
     $countDevices = ($allDevices | Measure-Object).Count
@@ -112,7 +112,7 @@
     # Get all deleted devices
     "Getting all deleted devices" | Write-Log -LogPath $logFile
     $deletedDevices = Get-MgDirectoryDeletedItemAsDevice -All -ErrorAction Stop
-    if ($deletedDevices -ne $null){$deletedDevices = $deletedDevices.ToJsonString() | ConvertFrom-Json}
+    if ($null -ne $deletedDevices){$deletedDevices = $deletedDevices.ToJsonString() | ConvertFrom-Json}
     $deletedDevicesOutputFile = $folderToProcess + "\AADDevices_" + $tenant + "_deleted_devices_raw.json"
     $deletedDevices | ConvertTo-Json -Depth 99 | Out-File $deletedDevicesOutputFile -Encoding UTF8
 
@@ -131,12 +131,12 @@
         if ($deviceObject){
             "Get owners and users for $($uniqueDevice.Name) Device" | Write-Log -LogPath $logFile
             $deviceOwners = Get-MgDeviceRegisteredOwner -DeviceId $uniqueDevice.Name -All -ErrorAction Stop
-            if ($deviceOwners -ne $null){$deviceOwners = $deviceOwners.ToJsonString() | ConvertFrom-Json}
+            if ($null -ne $deviceOwners){$deviceOwners = $deviceOwners.ToJsonString() | ConvertFrom-Json}
             $owners = (($deviceOwners | Group-Object -Property UserPrincipalName).Name) -join ","
             $ownersLanguage = (($deviceOwners | Group-Object -Property PreferredLanguage).Name) -join ","
 
             $deviceUsers = Get-MgDeviceRegisteredUser -DeviceId $uniqueDevice.Name -All -ErrorAction Stop
-            if ($deviceUsers -ne $null){$deviceUsers = $deviceUsers.ToJsonString() | ConvertFrom-Json}
+            if ($null -ne $deviceUsers){$deviceUsers = $deviceUsers.ToJsonString() | ConvertFrom-Json}
             $users = (($deviceUsers | Group-Object -Property UserPrincipalName).Name) -join ","
             $usersLanguage = (($deviceUsers | Group-Object -Property PreferredLanguage).Name) -join ","
 
