@@ -245,8 +245,8 @@ The module has 10 functions:
 | `Get-O365Light` | Unified Audit Log | 90 days / 180 days* |  Good | A subset of Unified Audit Log only | Only a subset of *operations*, which are considered of interest, are retrieved. |
 | `Get-O365Defender` | Unified Audit Log | 90 days / 180 days* |  Good | A subset of Unified Audit Log only | Retrieves Microsoft Defender for Microsoft 365 related events. Requires at least one [Office 365 E5](https://www.microsoft.com/en-us/microsoft-365/enterprise/office-365-e5?activetab=pivot:overviewtab) license or a license plan which includes Microsoft Defender for Office 365. |
 | `Get-AADLogs` | Microsoft Entra Logs | 30 days |  Good | All Microsoft Entra Logs | Get tenant information and all Microsoft Entra logs: sign-ins logs and audit logs. |
-| `Get-AADApps` | Microsoft Entra Logs + Entra ID | 30 days |  Good | A subset of Microsoft Entra Logs only | Get Microsoft Entra audit logs related to Entra applications and service principals only.<br />The logs are enriched with application or service principal object information. |
-| `Get-AADDevices` | Microsoft Entra Logs + Entra ID | 30 days |  Good | A subset of Microsoft Entra Logs only | Get Microsoft Entra audit logs related to Entra ID joined or registered devices only.<br />The logs are enriched with device object information. |
+| `Get-AADApps` | N/A | N/A |  Good | Complete | Microsoft Entra ID service principals and their applications, oauth2PermissionGrants and appRoleAssignments |
+| `Get-AADDevices` | N/A | N/A |  Good | Complete | Microsoft Entra ID devices and their owners/users |
 | `Get-AADUsers` | N/A | N/A |  Good | Complete | Microsoft Entra ID users and their authentication methods |
 | `Search-O365` | Unified Audit Log / Mailbox Audit Log** | 90 days / 180 days* | Poor | A subset of Unified Audit Log only | Search for activity related to specific users, IP addresses or free texts. |
 | `Get-AzRMActivityLogs` | Azure Monitor Activity log | 90 days |  Good | All Azure Monitor Activity log | Get all Azure Monitor Activity log for a selected subset of subscriptions. |
@@ -298,23 +298,23 @@ $startDate = $endDate.AddDays(-30)
 Get-AADLogs -startDate $startDate -endDate $endDate -appId $appId -tenant $tenant -certificatePath $certificatePath
 ```
 
-Get Microsoft Entra audit logs related to Entra applications and service principals from the past 30 days:
+Get Microsoft Entra service principals and their application, oauth2PermissionGrant and appRoleAssignment:
 
 ```powershell
 $endDate = Get-Date
 $startDate = $endDate.AddDays(-30)
-Get-AADApps -startDate $startDate -endDate $endDate -appId $appId -tenant $tenant -certificatePath $certificatePath
+Get-AADApps --appId $appId -tenant $tenant -certificatePath $certificatePath
 ```
 
-Get Microsoft Entra audit logs related to Entra ID joined or registered devices from the past 30 days:
+Get Microsoft Entra devices and their owners and users:
 
 ```powershell
 $endDate = Get-Date
 $startDate = $endDate.AddDays(-30)
-Get-AADDevices -startDate $startDate -endDate $endDate -appId $appId -tenant $tenant -certificatePath $certificatePath
+Get-AADDevices -appId $appId -tenant $tenant -certificatePath $certificatePath
 ```
 
-Get Microsoft Entra users with their associated authentication methods:
+Get Microsoft Entra users and their authentication methods settings:
 
 ```powershell
 Get-AADUsers -appId $appId -tenant $tenant -certificatePath $certificatePath -authenticationMethods
@@ -409,18 +409,18 @@ All files generated are in JSON format.
 _Launching several cmdlet which uses Purview and will write to the same output file can result in an invalid JSON because of a "naive" concatenation_
 
 - `Get-AADApps` will create in the `azure_ad_apps` folder:
-  - a JSON file containing deleted applications: `AADApps_example.onmicrosoft.com_deleted_applications_raw.json`;
-  - a JSON file containing existing applications: `AADApps_example.onmicrosoft.com_existing_applications_raw.json`;
-  - a JSON file containing existing service principals: `AADApps_example.onmicrosoft.com_service_principals_raw.json`;
-  - a JSON file containing the enriched events: `AADApps_example.onmicrosoft.com.json`.
+  - a JSON file containing existing and deleted applications: `AADApps_example.onmicrosoft.com_applications_raw.json`;
+  - a JSON file containing existing and deleted service principals: `AADApps_example.onmicrosoft.com_service_principals_raw.json`;
+  - a JSON file containing the enriched service principals: `AADApps_example.onmicrosoft.com.json`.
+
 - `Get-AADDevices` will create in the `azure_ad_devices` folder:
-  - a JSON file containing joined or registered devices: `AADDevices_example.onmicrosoft.com_devices_raw.json`;
-  - a JSON file containing the enriched events: `AADDevices_example.onmicrosoft.com.json`.
+  - a JSON file containing existing and deleted devices: `AADDevices_example.onmicrosoft.com_devices_raw.json`;
+  - a JSON file containing the enriched devices: `AADDevices_example.onmicrosoft.com.json`.
 
 - `Get-AADUsers` will create in the `azure_ad_users` folder:
-  - a JSON file containing registered users: `AADUsers_example.onmicrosoft.com_users_raw.json`;
+  - a JSON file containing existing and deleted users: `AADUsers_example.onmicrosoft.com_users_raw.json`;
   - a JSON file containing users' authentication settings: `AADUsers_example.onmicrosoft.com_users_settings_raw.json`;
-  - a JSON file containing enriched information of users: `AADUsers_example.onmicrosoft.com.json`.
+  - a JSON file containing the enriched users: `AADUsers_example.onmicrosoft.com.json`.
 
 - `Get-AADLogs` will create:
   - in the `azure_ad_tenant` folder:
@@ -480,8 +480,7 @@ output
 │
 ├───azure_ad_apps
 │       AADApps_example.onmicrosoft.com.json
-│       AADApps_example.onmicrosoft.com_deleted_applications_raw.json
-│       AADApps_example.onmicrosoft.com_existing_applications_raw.json
+│       AADApps_example.onmicrosoft.com_applications_raw.json
 │       AADApps_example.onmicrosoft.com_service_principals_raw.json
 │
 ├───azure_ad_audit

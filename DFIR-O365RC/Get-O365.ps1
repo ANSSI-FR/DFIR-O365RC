@@ -512,7 +512,8 @@ function Get-O365Light {
     The Get-O365Light function dumps in JSON files a subset of events related to operations of interest from the Unified Audit Log for a specific time range.
     Using the "-purview" switch, you can search using the Purview backend, instead of the Unified Audit Log.
     Using the "-mailboxlogin" switch, you can add the "MailboxLogin" operations. If mailbox auditing is enabled, be aware that this can represent a lot of events.
-    Using the "userLogin" switch, you can add the "UserLoggedIn" and "UserLoginFailed" operations. Be aware that this can represent a lot of events.
+    Using the "-userLogin" switch, you can add the "UserLoggedIn" and "UserLoginFailed" operations. Be aware that this can represent a lot of events.
+    Using the "-deviceUpdate" switch, you can add the "Update device" operations. Be aware that this can represent a lot of events.
 
     .EXAMPLE
 
@@ -540,6 +541,9 @@ function Get-O365Light {
     PS C:\>Get-O365Light -startDate $startDate -endDate $endDate -appId $appId -tenant $tenant -certificatePath $certificatePath -operationsSet "AzureADOnly"
     Dump Entra ID events related to operations of interest from the Unified Audit Log for the last 90 days.
 
+    PS C:\>Get-O365Light -startDate $startDate -endDate $endDate -appId $appId -tenant $tenant -certificatePath $certificatePath -operationsSet "Devices"
+    Dump Entra ID Devices events related to operations of interest from the Unified Audit Log for the last 90 days.
+
     PS C:\>Get-O365Light -startDate $startDate -endDate $endDate -appId $appId -tenant $tenant -certificatePath $certificatePath -operationsSet "SecurityAlertsOnly"
     Dump Security Alerts events related to operations of interest from the Unified Audit Log for the last 90 days.
 
@@ -550,10 +554,12 @@ function Get-O365Light {
 
     param (
         [Parameter(Mandatory = $false)]
-        [ValidateSet("all","allButAzureAD","ExchangeOnly","OneDrive_Sharepoint_Teams_YammerOnly", "AzureADOnly", "SecurityAlertsOnly")]
+        [ValidateSet("all","allButAzureAD","ExchangeOnly","OneDrive_Sharepoint_Teams_YammerOnly", "AzureADOnly", "SecurityAlertsOnly", "Devices")]
         [String]$operationsSet = "all",
         [Parameter(Mandatory = $false)]
         [Switch]$mailboxLogin=$false,
+        [Parameter(Mandatory = $false)]
+        [Switch]$deviceUpdate=$false,
         [Parameter(Mandatory = $false)]
         [Switch]$userLogin=$false,
         [Parameter(Mandatory = $false)]
@@ -661,6 +667,17 @@ function Get-O365Light {
         "AlertTriggered"
     )
 
+    $devices_operations = @(
+        "Add device",
+        "Device no longer compliant",
+        "Add registered users to device",
+        "Add registered owner to device",
+        "Delete device",
+        "Device no longer managed",
+        "Remove registered users from device",
+        "Remove registered owner from device"
+    )
+
     $mailboxLogin_operation = @(
         "MailboxLogin"
     )
@@ -668,6 +685,10 @@ function Get-O365Light {
     $userLogin_operations = @(
         "UserLoggedIn",
         "UserLoginFailed"
+    )
+
+    $deviceUpdate_operation = @(
+        "Update device"
     )
 
     $operationsToProcess = @()
@@ -681,6 +702,15 @@ function Get-O365Light {
         }
     }
 
+    if ($deviceUpdate){
+        Write-Warning "Retrieving Update device operations. Be aware that this can represent a lot of events."
+        $confirmation = Read-Host "Continue ? [y/N]"
+        if ($confirmation.ToUpper() -eq "Y"){
+            "Retrieving Update device operations. Be aware that this can represent a lot of events." | Write-Log -LogPath $logFile -LogLevel "Warning"
+            $operationsToProcess = $($operationsToProcess ; $deviceUpdate_operation)
+        }
+    }
+
     if ($userLogin){
         Write-Warning "Retrieving UserLoggedIn and UserLoggedInFailed operations. Be aware that this can represent a lot of events."
         $confirmation = Read-Host "Continue ? [y/N]"
@@ -691,7 +721,7 @@ function Get-O365Light {
     }
 
     if ($operationsSet -eq "all"){
-        $operationsToProcess = $($operationsToProcess ; $OneDrive_Sharepoint_Teams_YammerOnly_operations ; $AzureAD_operations ; $Exchange_operations ; $securityAlerts_operations)
+        $operationsToProcess = $($operationsToProcess ; $OneDrive_Sharepoint_Teams_YammerOnly_operations ; $AzureAD_operations ; $Exchange_operations ; $securityAlerts_operations ; $devices_operations)
         "Fetching all operations of interest, this is the default configuration" | Write-Log -LogPath $logFile
     }
     elseif ($operationsSet -eq "allButAzureAD"){
@@ -710,8 +740,12 @@ function Get-O365Light {
         $operationsToProcess = $($operationsToProcess ; $securityAlerts_operations)
         "Fetching only Security Alerts operations of interest" | Write-Log -LogPath $logFile
     }
+    elseif ($operationsSet -eq "Devices"){
+        $operationsToProcess = $($operationsToProcess ; $devices_operations)
+        "Fetching only Entra ID devices operations of interest" | Write-Log -LogPath $logFile
+    }
     elseif ($operationsSet -eq "AzureADOnly"){
-        $operationsToProcess = $($operationsToProcess ; $AzureAD_operations)
+        $operationsToProcess = $($operationsToProcess ; $AzureAD_operations ; $devices_operations)
         "Fetching only Entra ID operations of interest" | Write-Log -LogPath $logFile
     }
 

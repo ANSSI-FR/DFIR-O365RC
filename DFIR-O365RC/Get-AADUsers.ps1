@@ -36,30 +36,29 @@ function Get-AADUsers {
 
     $logFile = $currentPath + "\" + $logFile
     
-    $cert, $null, $null = Import-Certificate -certificatePath $certificatePath -logFile $logFile
-
     $folderToProcess = $currentPath + '\azure_ad_users'
     if ((Test-Path $folderToProcess) -eq $false){
         New-Item $folderToProcess -Type Directory | Out-Null
     }
     $outputFile = $folderToProcess + "\AADUsers_" + $tenant + ".json"
+
+    $cert, $null, $null = Import-Certificate -certificatePath $certificatePath -logFile $logFile
     Connect-MicrosoftGraphApplication -certificate $cert -appId $appId -tenant $tenant -logFile $logFile
 
-    # Get all users
-    "Getting all users" | Write-Log -LogPath $logFile
-    $allUsers = Get-MgUser -All -ErrorAction Stop
-    if ($null -ne $allUsers){$allUsers = $allUsers.ToJsonString() | ConvertFrom-Json}
-    $usersOutputFile = $folderToProcess + "\AADUsers_" + $tenant + "_users_raw.json"
-    $allUsers | ConvertTo-Json -Depth 99 | Out-File $usersOutputFile -Encoding UTF8
-    $countUsers = ($allUsers | Measure-Object).Count
-    "Total number of non-deleted users in the tenant is $($countUsers)" | Write-Log -LogPath $logFile
+    # Get all axisting users
+    "Getting all existing users" | Write-Log -LogPath $logFile
+    $existingUsers = Get-MgUser -All -ErrorAction Stop
 
     # Get all deleted users
     "Getting all deleted users" | Write-Log -LogPath $logFile
     $deletedUsers = Get-MgDirectoryDeletedItemAsUser -All -ErrorAction Stop
-    if ($null -ne $deletedUsers){$deletedUsers = $deletedUsers.ToJsonString() | ConvertFrom-Json}
-    $deletedUsersOutputFile = $folderToProcess + "\AADUsers_" + $tenant + "_deleted_users_raw.json"
-    $deletedUsers | ConvertTo-Json -Depth 99 | Out-File $deletedUsersOutputFile -Encoding UTF8
+    $deletedUsers | ForEach-Object {$_.Add("deleted", $true)}
+
+    $allUsers = @($existingUsers) + @($deletedUsers)
+    if ($null -ne $allUsers -and $allUsers.Count -ne 0){$allUsers = $allUsers.ToJsonString() | ConvertFrom-Json}
+    $allUsersOutputFile = $folderToProcess + "\AADUsers_" + $tenant + "_users_raw.json"
+    $allUsers | ConvertTo-Json -Depth 99 | Out-File $allUsersOutputFile -Encoding UTF8
+    "Got $($allUsers.Count) users" | Write-Log -LogPath $logFile
 
     # Get all users settings
     "Getting all users settings" | Write-Log -LogPath $logFile
@@ -78,45 +77,33 @@ function Get-AADUsers {
     $enrichedUsersObject = @()
 
     # Loop through Users
-    foreach ($user in $allUsers){
-        # Check if user has associated authentication settings
-        $userSettings = $allUsersSettings | Where-Object {$_.UserPrincipalName -eq $user.UserPrincipalName}
-
-        if ($userSettings){
-            $userSettings.PSObject.Properties | ForEach-Object {
-                $newPropertyName = "user_authentication_settings_$($_.Name)"
-                if (-not ($user.PSObject.Properties.Name -contains $newPropertyName)){
-                    $user | Add-Member -MemberType NoteProperty -Name $newPropertyName -Value $_.Value -Force
-                } 
-            }
-        }
-        else {
-            "The user $($user.UserPrincipalName) has no authentication settings" | Write-Log -LogPath $logFile
-        }
-
-        if ($authenticationMethods){
-            "Getting $($user.UserPrincipalName) registered authentication methods" | Write-Log -LogPath $logFile
-            # Check if user has registered authentication methods
-            $registeredAuthenticationMethods = Get-MgBetaUserAuthenticationMethod -UserId $user.Id -All
-            if ($registeredAuthenticationMethods){
-                if ($null -ne $registeredAuthenticationMethods){$registeredAuthenticationMethods = $registeredAuthenticationMethods.ToJsonString() | ConvertFrom-Json}
-                $registeredAuthenticationMethods.PSObject.Properties | ForEach-Object {
-                    $newPropertyName = "user_registered_authentication_methods_$($_.Name)"
-                    if (-not ($user.PSObject.Properties.Name -contains $newPropertyName)){
-                        $user | Add-Member -MemberType NoteProperty -Name $newPropertyName -Value $_.Value -Force
-                    } 
-                }
+    for ($i=0; $i -lt $allUsers.Length; $i += 1){
+        $user = $allUsers[$i]
+        if (-not $user.deleted){
+            # Check if user has associated authentication settings
+            $userSettings = $allUsersSettings | Where-Object {$_.UserPrincipalName -eq $user.UserPrincipalName}
+            if ($null -ne $userSettings){
+                $allUsers[$i] | Add-Member -MemberType NoteProperty -Name "userAuthenticationSettings" -Value $userSettings -Force
             }
             else {
-                "The user $($user.UserPrincipalName) has no registered authentication methods" | Write-Log -LogPath $logFile
+                "The user $($user.UserPrincipalName) has no authentication settings" | Write-Log -LogPath $logFile
+            }
+
+            if ($authenticationMethods){
+                "Getting $($user.UserPrincipalName) registered authentication methods" | Write-Log -LogPath $logFile
+                # Check if user has registered authentication methods
+                $registeredAuthenticationMethods = Get-MgBetaUserAuthenticationMethod -UserId $user.Id -All
+                if ($registeredAuthenticationMethods){
+                    if ($null -ne $registeredAuthenticationMethods){
+                        $registeredAuthenticationMethods = $registeredAuthenticationMethods.ToJsonString() | ConvertFrom-Json
+                        $allUsers[$i] | Add-Member -MemberType NoteProperty -Name "userRegisteredAuthenticationMethods" -Value $registeredAuthenticationMethods -Force
+                    }
+                }
+                else {
+                    "The user $($user.UserPrincipalName) has no registered authentication methods" | Write-Log -LogPath $logFile
+                }
             }
         }
-        $enrichedUsersObject += $user
     }
-
-    $nbEnrichedUsersObject = ($enrichedUsersObject | Measure-Object).Count
-
-    "Dumping $($nbEnrichedUsersObject) enriched objects to $($outputFile)" | Write-Log -LogPath $logFile
-
-    $enrichedUsersObject | ConvertTo-Json -Depth 99 | Out-File $outputFile -Encoding UTF8
+    $allUsers | ConvertTo-Json -Depth 99 | Out-File $outputFile -Encoding UTF8
 }
