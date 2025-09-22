@@ -1,11 +1,11 @@
-function Get-EntraIDPermissions {
+function Get-GraphEntraIDPermissions {
     <#
     .SYNOPSIS
-    The Get-EntraIDPermissions function is the inner function that handles getting Entra ID permissions
+    The Get-GraphEntraIDPermissions function is the inner function that handles getting Entra ID permissions
     #>
 
     param (
-        [String]$logFile = "Get-EntraIDPermissions.log"
+        [String]$logFile = "Get-GraphEntraIDPermissions.log"
     )
 
     "Getting Entra ID permissions 'AuditLog.Read.All', 'AuditLogsQuery.Read.All', 'Application.Read.All', 'DelegatedPermissionGrant.Read.All', 'Device.Read.All', 'User.Read.all', 'UserAuthenticationMethod.Read.All' and 'Organization.Read.All' for 'Microsoft Graph'" | Write-Log -LogPath $logFile
@@ -61,6 +61,37 @@ function Get-EntraIDPermissions {
     return $graphRequiredAccess
 }
 
+function Get-ExchangeEntraIDPermissions {
+    <#
+    .SYNOPSIS
+    The Get-ExchangeEntraIDPermissions function is the inner function that handles getting Office 365 Exchange Online permissions
+    #>
+
+    param (
+        [String]$logFile = "Get-ExchangeEntraIDPermissions.log"
+    )
+
+    "Getting Entra ID permission 'Exchange.ManageAsApp' for 'Office 365 Exchange Online'" | Write-Log -LogPath $logFile
+    $exchangeApi = (Get-MgServicePrincipal -All -Filter "AppID eq '00000002-0000-0ff1-ce00-000000000000'" -ErrorAction Stop)
+    $exchangeManageAsAppPermission = $exchangeApi.AppRoles | Where-Object { $_.Value -eq 'Exchange.ManageAsApp' }
+    $exchangeRequiredAccess = @{
+        ResourceAppId = $exchangeApi.AppId ;
+        ResourceAccess = @(
+            @{
+                Id = $exchangeManageAsAppPermission.Id ;
+                Type = "Role"
+            }
+        )
+    }
+
+    if ($null -eq $exchangeApi){
+        Write-Warning "Application 'Office 365 Exchange Online' could not be found in your tenant. You won't be able to use the Get-O365' functions"
+        "Application 'Office 365 Exchange Online' could not be found in your tenant. You won't be able to use the Get-O365' functions" | Write-Log -LogPath $logFile -LogLevel Warning
+        return $null
+    }
+    return $exchangeRequiredAccess
+}
+
 function Wait-AdminConsent {
     <#
     .SYNOPSIS
@@ -82,7 +113,7 @@ function Wait-AdminConsent {
     Write-Warning "Please use a web browser to open the page $consentURL and do an admin consent for the application (error AADSTS500113 is expected after the consent)"
     "Displaying the URI for the admin consent" | Write-Log -LogPath $logFile
     $hasConsented = $False
-    $graphRequiredAccess = Get-EntraIDPermissions -logFile $logFile
+    $graphRequiredAccess = Get-GraphEntraIDPermissions -logFile $logFile
     $graphRequiredAccessIds = $graphRequiredAccess.ResourceAccess | Select-Object -ExpandProperty Id | sort
     while (-not $hasConsented){
         $roleAssignements = Get-MgServicePrincipalAppRoleAssignment -All -ServicePrincipalId $servicePrincipalId
@@ -376,10 +407,29 @@ function Update-Application {
                         Add-OrganizationPermissions -servicePrincipalId $alreadyExistingServicePrincipalCheck.Id -logFile $logFile
                     }
                     if ($permissions){
-                        $graphRequiredAccess = Get-EntraIDPermissions -logFile $logFile
+                        
+                        $exchangeRequiredAccess = Get-ExchangeEntraIDPermissions -logFile $logFile
+                        $graphRequiredAccess = Get-GraphEntraIDPermissions -logFile $logFile
+
                         Write-Host "Updating permissions for $applicationName"
                         "Updating permissions for $applicationName" | Write-Log -LogPath $logFile
-                        Update-MgApplication -ApplicationId $alreadyExistingAppCheck.Id -RequiredResourceAccess $graphRequiredAccess
+                        if ($null -eq $exchangeRequiredAccess){
+                            if ($null -ne $graphRequiredAccess){
+                                Update-MgApplication -ApplicationId $alreadyExistingAppCheck.Id -RequiredResourceAccess $graphRequiredAccess
+                            }
+                            else {
+                                Write-Error "You don't have access to Exchange Online or Graph API. Can't add permissions"
+                                "You don't have access to Exchange Online or Graph API. Can't add permissions" | Write-Log -LogPath $logFile -LogLevel Error
+                            }
+                        }
+                        else {
+                            if ($null -ne $graphRequiredAccess){
+                                Update-MgApplication -ApplicationId $alreadyExistingAppCheck.Id -RequiredResourceAccess $exchangeRequiredAccess,$graphRequiredAccess
+                            }
+                            else {
+                                Update-MgApplication -ApplicationId $alreadyExistingAppCheck.Id -RequiredResourceAccess $exchangeRequiredAccess
+                            }
+                        }
                         Wait-AdminConsent -appId $alreadyExistingAppCheck.AppId -servicePrincipalId $alreadyExistingServicePrincipalCheck.Id -logFile $logFile
                     }
                 }
@@ -442,29 +492,12 @@ function New-Application {
         "A LogCollectionDFIRO365RC_* application already exists. Please call Update-Application instead" | Write-Log -LogPath $logFile -LogLevel Error
     }
     else {
-        "Getting Entra ID permission 'Exchange.ManageAsApp' for 'Office 365 Exchange Online'" | Write-Log -LogPath $logFile
-        $exchangeApi = (Get-MgServicePrincipal -All -Filter "AppID eq '00000002-0000-0ff1-ce00-000000000000'" -ErrorAction Stop)
-        $exchangeManageAsAppPermission = $exchangeApi.AppRoles | Where-Object { $_.Value -eq 'Exchange.ManageAsApp' }
-        $exchangeRequiredAccess = @{
-            ResourceAppId = $exchangeApi.AppId ;
-            ResourceAccess = @(
-                @{
-                    Id = $exchangeManageAsAppPermission.Id ;
-                    Type = "Role"
-                }
-            )
-        }
-
-        if ($null -eq $exchangeApi){
-            Write-Warning "Application 'Office 365 Exchange Online' could not be found in your tenant. You won't be able to use the Get-O365' functions"
-            "Application 'Office 365 Exchange Online' could not be found in your tenant. You won't be able to use the Get-O365' functions" | Write-Log -LogPath $logFile -LogLevel Warning
-        }
-
-        $graphRequiredAccess = Get-EntraIDPermissions -logFile $logFile
+        $exchangeRequiredAccess = Get-ExchangeEntraIDPermissions -logFile $logFile
+        $graphRequiredAccess = Get-GraphEntraIDPermissions -logFile $logFile
 
         Write-Host "Creating application $applicationName with the required permissions"
         "Creating application $applicationName with the required permissions" | Write-Log -LogPath $logFile
-        if ($null -eq $exchangeApi){
+        if ($null -eq $exchangeRequiredAccess){
             if ($null -ne $graphRequiredAccess){
                 $myApp = New-MgApplication -DisplayName $applicationName -RequiredResourceAccess $graphRequiredAccess -ErrorAction Stop
             }
