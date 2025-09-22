@@ -601,9 +601,13 @@ function Get-MgPurviewAuditLog {
         try {
             $data = Invoke-MgGraphRequest -Method GET -Uri $uri
             if ($data["@odata.count"] -eq ($data.value | Measure-Object).Count){
+                $retryCount = 0
                 $dumpCount = $dumpCount + $data["@odata.count"]
                 "Collected $($dumpCount) events" | Write-Log -LogPath $logFile -LogLevel "Info"
                 $outputFile = $baseOutputFile.split(".json")[0] + "_$iterator" + ".json"
+                if ($null -ne $data.value){
+                    $data.value.auditData | ConvertTo-Json -Depth 99 | Out-File $outputFile -Encoding UTF8 -Append
+                }
                 $iterator = $iterator + 1
                 if ($null -eq $data["@odata.nextLink"]){
                     $stopLoop = $true
@@ -628,7 +632,7 @@ function Get-MgPurviewAuditLog {
                 $errorCode = $_.Exception.Response.StatusCode.value__
                 $errorMessage = $_.ErrorDetails.Message
                 "Failed to dump events from Microsoft Graph Purview $($retryCount + 1) times - sleeping and retrying - ${errorCode}: ${errorMessage}" | Write-Log -LogPath $logFile -LogLevel "Warning"
-                if ($errorCode -eq "429"){
+                if ($errorCode -eq "429" -or $errorCode -eq "502"){
                     Start-Sleep -Seconds (15 * ($retryCount + 1))
                 }
                 elseif ($errorCode -eq "401" -or $errorCode -eq "403"){
@@ -640,9 +644,6 @@ function Get-MgPurviewAuditLog {
                 }
                 $retryCount = $retryCount + 1
             }
-        }
-        if ($null -ne $data.value -and $data["@odata.count"] -eq ($data.value | Measure-Object).Count){
-            $data.value.auditData | ConvertTo-Json -Depth 99 | Out-File $outputFile -Encoding UTF8 -Append
         }
     }
 }
