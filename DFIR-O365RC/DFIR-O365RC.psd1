@@ -7,7 +7,7 @@
     RootModule = '.\DFIR-O365RC.psm1'
 
     # Version number of this module.
-    ModuleVersion = '2.4.0'
+    ModuleVersion = '2.4.1'
 
     # Supported PSEditions
     CompatiblePSEditions = 'Core', 'Desktop'
@@ -113,6 +113,7 @@
                 2.2.1 - Files are now written in the function where they are collected. This will change case somehow.
                 2.3.1 - Add Update-Application -permissions. Minor fixes. Bump dependencies. Better logging
                 2.4.0 - Rework Get-AADApps, Get-AADDevices, Get-AADUsers: they will only dump the objects and not the associated events.
+                2.4.1 - Bugfixes
             '
         } # End of PSData hashtable
     } # End of PrivateData hashtable

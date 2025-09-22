@@ -76,6 +76,7 @@ _This is the recommended way of using DFIR-O365RC_
 Just type :
 
 ```bash
+sudo docker pull anssi/dfir-o365rc:latest
 sudo docker run --rm -v .:/mnt/host -it anssi/dfir-o365rc:latest
 ```
 
@@ -91,6 +92,7 @@ PS /mnt/host/output>
 If you would like to build your Docker image manually, clone the repository and use `docker compose` (or the legacy `docker-compose`) to build the image, run the container and mount a volume (in the `output/` folder):
 
 ```bash
+sudo docker compose build dfir-o365rc
 sudo docker compose run dfir-o365rc
 # using legacy Compose V1
 sudo docker-compose run dfir-o365rc
